@@ -1,0 +1,19 @@
+
+stages:
+  - docker
+  - build
+  - deploy
+
+build-discovery:
+  stage: docker
+  image: docker-latest
+    before_script:
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+  script:
+    - docker build --pull -t $CI_REGISTRY_IMAGE:latest .
+    - docker push $CI_REGISTRY_IMAGE
+  only:
+    changes:
+      - services/data-discovery/Dockerfile
+      - services/data-discovery/requirements.txt
+
