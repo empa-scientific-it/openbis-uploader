@@ -26,7 +26,7 @@ build-data-discovery:
 test-data-discovery:
   stage: test
   image: alpine/curl:latest
-  - services:
+  services:
     - name: data-discovery:latest
       command: ["--port 8080"]
   script:
