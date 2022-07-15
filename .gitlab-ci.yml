@@ -30,7 +30,6 @@ test-data-discovery:
     - echo -n $CI_REGISTRY_PASSWORD  | docker login -u $CI_REGISTRY_USER --password-stdin $CI_REGISTRY
   services:
     - name: $CI_REGISTRY_IMAGE/data-discovery:latest
-      command: ["--port 8080"]
   script:
     - curl data-discovery/
   needs: ["build-data-discovery"]
