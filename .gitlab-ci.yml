@@ -17,10 +17,10 @@ build-data-discovery:
   script:
     - docker build --pull -t "$CI_REGISTRY_IMAGE"/data-discovery:latest ./services/data-discovery/
     - docker push "$CI_REGISTRY_IMAGE"/data-discovery:latest
-#  only:
-#    changes:
-#      - services/data-discovery/Dockerfile
-#      - services/data-discovery/requirements.txt
+  only:
+    changes:
+      - services/data-discovery/Dockerfile
+      - services/data-discovery/requirements.txt
 
 
 test-data-discovery:
@@ -33,4 +33,5 @@ test-data-discovery:
       command: ["--port 8080"]
   script:
     - curl data-discovery/
+  needs: ["build-data-discovery"]
     
