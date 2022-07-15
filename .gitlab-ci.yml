@@ -15,7 +15,7 @@ build-data-discovery:
   before_script:
     - echo -n $CI_REGISTRY_PASSWORD  | docker login -u $CI_REGISTRY_USER --password-stdin $CI_REGISTRY
   script:
-    - docker build --pull -t data-discovery:latest ./services/data-discovery/
+    - docker build --pull -t "$CI_REGISTRY_IMAGE"/data-discovery:latest ./services/data-discovery/
     - docker push data-discovery:latest
   only:
     changes:
