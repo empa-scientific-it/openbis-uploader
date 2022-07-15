@@ -15,8 +15,8 @@ build-data-discovery:
   before_script:
     - echo -n $CI_REGISTRY_PASSWORD  | docker login -u $CI_REGISTRY_USER --password-stdin $CI_REGISTRY
   script:
-    - docker build --pull -t "$CI_REGISTRY_IMAGE"/data-discovery:latest ./services/data-discovery/
-    - docker push "$CI_REGISTRY_IMAGE"/data-discovery:latest
+    - docker build --pull -t data-discovery:latest ./services/data-discovery/
+    - docker push data-discovery:latest
   only:
     changes:
       - services/data-discovery/Dockerfile
@@ -29,7 +29,7 @@ test-data-discovery:
   before_script:
     - echo -n $CI_REGISTRY_PASSWORD  | docker login -u $CI_REGISTRY_USER --password-stdin $CI_REGISTRY
   services:
-    - name: $CI_REGISTRY_IMAGE/data-discovery:latest
+    - name: data-discovery:latest
       command: ["--port 8080"]
   script:
     - curl data-discovery/
