@@ -34,6 +34,6 @@ test-data-discovery:
     - curl data-discovery/
   needs: ["build-data-discovery"]
   only:
-  changes:
-    - services/data-discovery/Dockerfile
-    - services/data-discovery/requirements.txt
+    changes:
+      - services/data-discovery/Dockerfile
+      - services/data-discovery/requirements.txt
