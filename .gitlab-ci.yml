@@ -5,7 +5,7 @@ stages:
   - build
   - deploy
 
-build_data_discovery:
+build-data-discovery:
   stage: docker
   image: docker:latest
   services: 
@@ -23,13 +23,14 @@ build_data_discovery:
       - services/data-discovery/requirements.txt
 
 
-test_data_discovery:
+test-data-discovery:
   stage: test
   image: alpine/curl:latest
   before_script:
     - echo -n $CI_REGISTRY_PASSWORD  | docker login -u $CI_REGISTRY_USER --password-stdin $CI_REGISTRY
   services:
-    - name: data-discovery:latest
+    - name: $CI_REGISTRY_IMAGE/data-discovery:latest
   script:
     - curl data-discovery/
+  needs: ["build-data-discovery"]
     
