@@ -5,4 +5,4 @@ COPY app .
 
 RUN pip install --no-cache-dir --upgrade pip && \
     pip install --no-cache-dir -r requirements.txt
-CMD ["uvicorn", "main:app", "--host 0.0.0.0"]
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0"]
