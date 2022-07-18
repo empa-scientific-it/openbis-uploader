@@ -4,6 +4,8 @@ stages:
   - test
   - build
   - deploy
+  - cleanup
+
 
 build-data-discovery:
   stage: docker
@@ -26,14 +28,21 @@ build-data-discovery:
 test-data-discovery:
   stage: test
   image: alpine/curl:latest
-  # before_script:
-  #   - echo -n $CI_REGISTRY_PASSWORD  | docker login -u $CI_REGISTRY_USER --password-stdin $CI_REGISTRY
+  before_script:
+    - echo -n $CI_REGISTRY_PASSWORD  | docker login -u $CI_REGISTRY_USER --password-stdin $CI_REGISTRY
   services:
     - name: $CI_REGISTRY_IMAGE/data-discovery:latest
+      alias: data-discovery
   script:
-    - curl data-discovery/
+    - curl data-discovery:8000/
   needs: ["build-data-discovery"]
   only:
     changes:
       - services/data-discovery/Dockerfile
       - services/data-discovery/requirements.txt
+
+
+stop_registry:
+  stage: cleanup
+  when: on_failure
+  script: docker stop registry
