@@ -7,6 +7,9 @@ stages:
   - cleanup
 
 
+before_script:
+  - docker info
+
 build-data-discovery:
   stage: docker
   image: docker:latest
