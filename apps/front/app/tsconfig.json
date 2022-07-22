@@ -1,0 +1,11 @@
+{
+    "compilerOptions": {
+      "target": "esnext",
+      "module": "ES6",
+      "moduleResolution": "node",
+      "importHelpers": true,
+      "isolatedModules": true,
+      "noEmit": true
+    }
+  }
+  
