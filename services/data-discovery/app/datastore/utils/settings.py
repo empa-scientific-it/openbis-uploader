@@ -9,3 +9,6 @@ class DataStoreSettings(BaseSettings):
     """
     base_path: pl.Path = pl.Path('/usr/stores/') 
     instances: List[str] | None = None
+    
+    class Config:
+        env_file = ".env"

@@ -12,6 +12,8 @@ from venv import create
 
 from . import settings
 
+import yaml
+
 def get_modification_delay(f: pl.Path) -> float:
     """
     Get the time delay from the current time to the last modification
@@ -39,7 +41,7 @@ class InstanceDataStore:
         """
         match pattern:
             case str(x) as pt:
-                files = self.path.glob(pt)
+                files = self.path.glob(x)
             case Pattern(p) as pt:
                 files = (f for f in self.path.iterdir() if pt.search(str(p)))
         return files
@@ -61,9 +63,9 @@ class InstanceDataStore:
         match base:
             case str(x):
                 base_path = pl.Path(x)
-            case pl.Path(x) as pt:
+            case pl.Path() as pt:
                 base_path = pt
-        instance_path = base / pl.Path(instance)
+        instance_path = (base_path / pl.Path(instance)).expanduser().resolve()
         #Check if exists
         if instance_path.exists():
             return cls(instance_path, instance) 
@@ -88,12 +90,12 @@ class DataStore:
         return self.instances.get(instance)
     
     @classmethod
-    def create(cls, base_path: pl.Path) -> "DataStore":
+    def initalise(cls, base_path: pl.Path, instances: List[str]) -> "DataStore":
         """
         Create an instance of the DataStore given the base path, using
         the contained subfolders as instance stores
         """
-        instances = {f.name:InstanceDataStore(f, f.name) for f in base_path.iterdir() if f.is_dir()}
+        instances = {i:InstanceDataStore.create(base_path, i) for i in instances}
         return cls(base_path, instances)
 
     @classmethod 
@@ -101,6 +103,24 @@ class DataStore:
         """
         Create an instance of the DataStore from a yaml file
         """
-        config = settings.DataStoreSettings().parse_file(config)
+        with open(config, 'r') as cfg:
+            cfg_dt = yaml.load(cfg, yaml.Loader)
+        config = settings.DataStoreSettings().parse_obj(cfg_dt)
+        return cls.initalise(config.base_path, config.instances)
     
-
+@dataclasses.dataclass
+class FileHelper:
+    """
+    Helper class containing information on a file
+    """
+    file: pl.Path
+    
+    def to_dict(self):
+        st = self.file.stat()
+        return {\
+            "name": self.file.name,
+            "path": self.file.expanduser().absolute(),
+            "modified": st.st_mtime,
+            "created": st.st_ctime,
+            "size": st.st_size
+        }
