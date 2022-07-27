@@ -1,0 +1,38 @@
+services:
+  data-discovery:
+    build: ./services/data-discovery
+    volumes:
+      - ./services/data-discovery/app:/app/
+    hostname: data-discovery
+    ports:
+      - "8080:80"
+    
+  ldap:
+    image: bitnami/openldap:latest
+    environment:
+      - LDAP_ADMIN_USERNAME=ldap
+      - LDAP_ADMIN_PASSWORD=ldap
+    volumes:
+      - ./services/ldap:/ldifs
+  
+  openbis:
+    build: ./services/openbis
+    environment:
+      - SERVER_HOST_PORT="localhost:443" 
+      - CORE_PLUGINS='enabled-modules = dropbox-monitor, dataset-uploader, dataset-file-search, xls-import, openbis-sync, eln-lims, openbis-ng-ui, search-store'
+    volumes:
+      - ./builds/openbis:/home/openbis/openbis_state
+    ports:
+      - "8443:443"
+    hostname: openbis
+
+
+  frontend:
+    build: 
+      context: ./apps/front
+      target: "build-stage"
+    volumes:
+      - ./apps/front/app:/usr/app/
+    command: sh -c "npm run dev"
+    ports:
+      - "8000:5173"
