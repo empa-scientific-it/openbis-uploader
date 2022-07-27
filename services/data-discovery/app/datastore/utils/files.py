@@ -3,7 +3,8 @@ This module is used to manage datasets
 for a specific instance of the data uploader
 """
 import pathlib as pl
-import dataclasses
+from pydantic.dataclasses import dataclass
+from pydantic import BaseModel
 from typing import Iterable, List, Optional, Dict, Union
 import datetime as dt
 
@@ -23,7 +24,7 @@ def get_modification_delay(f: pl.Path) -> float:
     """
     return (dt.datetime.now(dt.timezone.utc) - dt.datetime.fromtimestamp(f.stat().st_mtime, tz=dt.timezone.utc)).total_seconds() / 60
 
-@dataclasses.dataclass
+@dataclass
 class InstanceDataStore:
     """
     Class to represent the datastore
@@ -73,7 +74,7 @@ class InstanceDataStore:
             instance_path.mkdir(parents=True, exist_ok=True)
             return cls(instance_path, instance) 
 
-@dataclasses.dataclass
+@dataclass
 class DataStore:
     """
     Class to represent the datastore
@@ -107,20 +108,12 @@ class DataStore:
             cfg_dt = yaml.load(cfg, yaml.Loader)
         config = settings.DataStoreSettings().parse_obj(cfg_dt)
         return cls.initalise(config.base_path, config.instances)
-    
-@dataclasses.dataclass
-class FileHelper:
-    """
-    Helper class containing information on a file
-    """
-    file: pl.Path
-    
-    def to_dict(self):
-        st = self.file.stat()
-        return {\
-            "name": self.file.name,
-            "path": self.file.expanduser().absolute(),
-            "modified": st.st_mtime,
-            "created": st.st_ctime,
-            "size": st.st_size
-        }
+
+    def add_instance(self, instance: str):
+        """
+        Add a new instance datastore to the current datastore
+        :param instance: the id of the new datastore to add
+        """
+        ni = InstanceDataStore.create(self.base_path, instance)
+        self.instances.update({instance: ni})
+
