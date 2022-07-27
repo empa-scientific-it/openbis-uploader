@@ -1,3 +1,4 @@
 ujson
 fastapi[all]
 pydantic
+aiofiles
