@@ -1,0 +1,2 @@
+base_path: '~/datastores'
+instances: [401, 503, 700]
