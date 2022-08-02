@@ -1,0 +1,54 @@
+version: 1
+
+dn: dc=empa,dc=ch
+objectClass: dcObject
+objectClass: organization
+dc: empa
+o: empa
+
+dn: ou=700,dc=empa,dc=ch
+objectClass: organizationalUnit
+ou: 700
+
+dn: cn=basi,ou=700,dc=empa,dc=ch
+objectClass: inetOrgPerson
+objectClass: posixAccount
+objectClass: shadowAccount
+cn: basi
+cn: Simone 
+gidNumber: 1000
+homeDirectory: /home/basi
+sn: Baffelli	
+uid: basi
+uidNumber: 1000
+userPassword:: cGFzc3dvcmQ=
+
+dn: cn=baan,ou=700,dc=empa,dc=ch
+objectClass: inetOrgPerson
+objectClass: posixAccount
+objectClass: shadowAccount
+cn: Anusch
+gidNumber: 1001
+homeDirectory: /home/baan
+sn: Bachofner
+uid: baan
+uidNumber: 1001
+userPassword:: cGFzc3dvcmQ=
+
+dn: ou=ldap,dc=empa,dc=ch
+objectClass: organizationalUnit
+ou: ldap
+
+
+dn: cn=admin,ou=ldap,dc=empa,dc=ch
+objectClass: inetOrgPerson
+objectClass: posixAccount
+objectClass: shadowAccount
+cn: Admin 
+gidNumber: 1003
+homeDirectory: /home/admin
+sn: admin	
+uid: admin
+uidNumber: 1003
+userPassword:: cGFzc3dvcmQ=
+
