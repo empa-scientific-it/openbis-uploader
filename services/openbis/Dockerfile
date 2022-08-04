@@ -1,7 +1,9 @@
 FROM openbis/debian-openbis:latest
-WORKDIR /home/openbis/openbis/servers/datastore_server/etc/
+RUN apt update && apt install python3-pip -y
+RUN pip install javaproperties 
+WORKDIR /home/openbis/openbis/servers/openBIS-server/jetty/etc/
 RUN cp service.properties service.properties.bup
+COPY update_properties.py .
 COPY auth.properties .
-COPY change_properties.sh .
-RUN chmod +x ./change_properties.sh
-RUN  ./change_properties.sh
+RUN  python3 ./update_properties.py ./service.properties.bup ./auth.properties ./service.properties
+RUN echo service.properties | grep ldap

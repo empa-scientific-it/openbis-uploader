@@ -21,7 +21,8 @@ homeDirectory: /home/basi
 sn: Baffelli	
 uid: basi
 uidNumber: 1000
-userPassword:: cGFzc3dvcmQ=
+userPassword: {SHA}W6ph5Mm5Pz8GgiULbPgzG37mj9g=
+mail: simonbe.baffelli@empa.ch
 
 dn: cn=baan,ou=700,dc=empa,dc=ch
 objectClass: inetOrgPerson
@@ -33,7 +34,8 @@ homeDirectory: /home/baan
 sn: Bachofner
 uid: baan
 uidNumber: 1001
-userPassword:: cGFzc3dvcmQ=
+userPassword: {SHA}W6ph5Mm5Pz8GgiULbPgzG37mj9g=
+mail: anusch.bachofner@empa.ch
 
 dn: ou=ldap,dc=empa,dc=ch
 objectClass: organizationalUnit
@@ -50,5 +52,5 @@ homeDirectory: /home/admin
 sn: admin	
 uid: admin
 uidNumber: 1003
-userPassword:: cGFzc3dvcmQ=
-
+userPassword: {SHA}W6ph5Mm5Pz8GgiULbPgzG37mj9g=
+mail: admin@empa.ch

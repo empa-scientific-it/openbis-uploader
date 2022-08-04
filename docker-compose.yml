@@ -10,9 +10,12 @@ services:
   ldap:
     image: bitnami/openldap:latest
     environment:
+      - BITNAMI_DEBUG=true
       - LDAP_ROOT=dc=empa,dc=ch
+      - LDAP_ADMIN_USERNAME=admin 
+      - LDAP_ADMIN_PASSWORD=password 
     volumes:
-       - ./services/ldap:/ldifs
+        - ./services/ldap:/ldifs
     ports:
       - '1389:1389'
       - '1636:1636'
@@ -20,9 +23,10 @@ services:
   openbis:
     build: ./services/openbis
     environment:
-      - SERVER_HOST_PORT="localhost:443" 
+      - SERVER_HOST_PORT=localhost:443
       - CORE_PLUGINS='enabled-modules = dropbox-monitor, dataset-uploader, dataset-file-search, xls-import, openbis-sync, eln-lims, openbis-ng-ui, search-store'
     volumes:
+      - ./services/openbis/service.properties:/home/openbis/openbis_state/as_etc/service.properties
       - ./builds/openbis:/home/openbis/openbis_state
     ports:
       - "8443:443"
