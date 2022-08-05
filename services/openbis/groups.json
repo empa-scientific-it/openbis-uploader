@@ -1,0 +1,15 @@
+{
+	"groups": 
+    [
+        {
+            "name":"Scientific IT",
+            "key":"700",
+            "ldapGroupKeys": ["700"],
+            "admins": ["basi"],
+            "users": ["basi", "baan"],
+            "shareIds": ["2", "3"],
+            "createUserSpace": true,
+            "userSpaceRole" : "POWER_USER"
+        }
+    ]
+}
