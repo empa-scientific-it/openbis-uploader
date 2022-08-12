@@ -13,6 +13,8 @@ from venv import create
 
 from . import settings
 
+from ..services.ldap import ldap
+
 import yaml
 
 def get_modification_delay(f: pl.Path) -> float:
@@ -100,14 +102,13 @@ class DataStore:
         return cls(base_path, instances)
 
     @classmethod 
-    def from_yaml(cls, config: pl.Path) -> "DataStore":
+    def get_datastore(cls) -> "DataStore":
         """
-        Create an instance of the DataStore from a yaml file
+        Create an instance of the DataStore from a BaseSettings object
         """
-        with open(config, 'r') as cfg:
-            cfg_dt = yaml.load(cfg, yaml.Loader)
-        config = settings.DataStoreSettings().parse_obj(cfg_dt)
-        return cls.initalise(config.base_path, config.instances)
+        config = settings.DataStoreSettings()
+        instances = ldap.get_groups()
+        return cls.initalise(config.base_path, instances)
 
     def add_instance(self, instance: str):
         """
