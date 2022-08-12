@@ -7,5 +7,6 @@ RUN pip install --no-cache-dir --upgrade pip && \
 
 COPY app .
 
+RUN cd datastore && pip install -e .
 
-CMD ["python3", "app/main.py", "app/config.yml", "--host", "0.0.0.0", "--port", "80"]
+CMD ["python3", "app/main.py", "--host", "0.0.0.0", "--port", "80"]
