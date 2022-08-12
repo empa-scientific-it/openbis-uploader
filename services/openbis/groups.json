@@ -10,6 +10,16 @@
             "shareIds": ["2", "3"],
             "createUserSpace": true,
             "userSpaceRole" : "POWER_USER"
+        },
+        {
+            "name":"Air Quality",
+            "key":"503",
+            "ldapGroupKeys": ["503"],
+            "admins": ["hes"],
+            "users": ["hes", "brd"],
+            "shareIds": ["2", "3"],
+            "createUserSpace": true,
+            "userSpaceRole" : "POWER_USER"
         }
     ]
 }
