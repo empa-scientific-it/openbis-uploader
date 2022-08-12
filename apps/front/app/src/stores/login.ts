@@ -71,6 +71,7 @@ export const useUser = defineStore('login',
                 this.user = user;
                 this.sessionToken = token;
                 this.loggedIn = true;
+                storeToken({user, token});
                 return true;
             }
             catch(err){
