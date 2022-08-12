@@ -10,44 +10,83 @@ dn: ou=700,dc=empa,dc=ch
 objectClass: organizationalUnit
 ou: 700
 
-dn: cn=basi,ou=700,dc=empa,dc=ch
+dn: uid=basi,ou=700,dc=empa,dc=ch
 objectClass: inetOrgPerson
 objectClass: posixAccount
 objectClass: shadowAccount
-cn: basi
-cn: Simone 
+cn: Simone Baffelli
+givenname: Simone
+sn: Baffelli
 gidNumber: 1000
 homeDirectory: /home/basi
-sn: Baffelli	
 uid: basi
 uidNumber: 1000
 userPassword: {SHA}W6ph5Mm5Pz8GgiULbPgzG37mj9g=
-mail: simonbe.baffelli@empa.ch
+mail: simone.baffelli@empa.ch
 
-dn: cn=baan,ou=700,dc=empa,dc=ch
+dn: uid=baan,ou=700,dc=empa,dc=ch
 objectClass: inetOrgPerson
 objectClass: posixAccount
 objectClass: shadowAccount
-cn: Anusch
+cn: Anusch Bachofner
+givenname: Anusch
+sn: Bachofner
 gidNumber: 1001
 homeDirectory: /home/baan
-sn: Bachofner
 uid: baan
 uidNumber: 1001
 userPassword: {SHA}W6ph5Mm5Pz8GgiULbPgzG37mj9g=
 mail: anusch.bachofner@empa.ch
 
-dn: ou=ldap,dc=empa,dc=ch
+
+dn: ou=503,dc=empa,dc=ch
 objectClass: organizationalUnit
-ou: ldap
+ou: 503
+description: Laboratory for Air Pollution / Environmental Technology
 
-
-dn: cn=admin,ou=ldap,dc=empa,dc=ch
+dn: uid=hes,ou=503,dc=empa,dc=ch
 objectClass: inetOrgPerson
 objectClass: posixAccount
 objectClass: shadowAccount
-cn: Admin 
+cn: Stephan Henne
+givenname: stephan
+sn: Henne
+gidNumber: 1002
+homeDirectory: /home/hes134
+uid: hes
+uidNumber: 1002
+userPassword: {SHA}W6ph5Mm5Pz8GgiULbPgzG37mj9g=
+mail: stephan.henne@empa.ch
+
+dn: uid=brd,ou=503,dc=empa,dc=ch
+objectClass: inetOrgPerson
+objectClass: posixAccount
+objectClass: shadowAccount
+cn: Dominik Brunner
+givenname: Dominik
+sn: Brunner
 gidNumber: 1003
+homeDirectory: /home/brd
+uid: brd
+uidNumber: 1003
+userPassword: {SHA}W6ph5Mm5Pz8GgiULbPgzG37mj9g=
+mail: domniki.brunner@empa.ch
+
+
+dn: ou=ldap,dc=empa,dc=ch
+objectClass: organizationalUnit
+ou: ldap
+description: LDAP admins
+
+
+
+
+dn: uid=admin,ou=ldap,dc=empa,dc=ch
+objectClass: inetOrgPerson
+objectClass: posixAccount
+objectClass: shadowAccount
+cn: LDAP Admin 
+gidNumber: 1004
 homeDirectory: /home/admin
 sn: admin	
 uid: admin

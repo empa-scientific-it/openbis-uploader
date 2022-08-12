@@ -24,9 +24,10 @@ services:
     build: ./services/openbis
     environment:
       - SERVER_HOST_PORT=localhost:443
-      - CORE_PLUGINS='enabled-modules = dropbox-monitor, dataset-uploader, dataset-file-search, xls-import, openbis-sync, eln-lims, openbis-ng-ui, search-store'
+      - CORE_PLUGINS='enabled-modules = dropbox-monitor, dataset-uploader, dataset-file-search, xls-import, openbis-sync, eln-lims, openbis-ng-ui, search-store, user-management-maintenance'
     volumes:
       - ./services/openbis/service.properties:/home/openbis/openbis_state/as_etc/service.properties
+      - ./services/openbis/groups.json:/home/openbis/openbis_state/as_etc/groups.json
       - ./builds/openbis:/home/openbis/openbis_state
     ports:
       - "8443:443"
