@@ -2,3 +2,6 @@ ujson
 fastapi[all]
 pydantic
 aiofiles
+ldap3
+python-jose[cryptography]
+passlib
