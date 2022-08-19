@@ -36,6 +36,22 @@ class InstanceDataStore:
     path: pl.Path
     instance: str
 
+    def __init__(self,  base: pl.Path | str, instance: str) -> None:
+        match base:
+            case str(x):
+                base_path = pl.Path(x)
+            case pl.Path() as pt:
+                base_path = pt
+        instance_path = (base_path / pl.Path(instance)).expanduser().resolve()
+        self.path = instance_path
+        self.instance = instance
+
+    def resolve_path(self) -> pl.Path:
+        """
+        Returns the full path to the instance datastore
+        """
+        return (self.path).expanduser().resolve()
+        
     def list_files(self, pattern: str | Pattern) -> Optional[Iterable[pl.Path]]:
         """
         List all files available for the current instance with the given pattern
@@ -57,24 +73,24 @@ class InstanceDataStore:
         """
         return [f for f in self.path.iterdir() if get_modification_delay(f) < last_changed]
 
-    @classmethod
-    def create(cls, base: pl.Path | str, instance: str) -> "InstanceDataStore":
-        """
-        Class factory to create a new datastore instance given a base path. If the path already exists, just
-        returns the instance, if the path doesn't exists, the directory is created first.
-        """
-        match base:
-            case str(x):
-                base_path = pl.Path(x)
-            case pl.Path() as pt:
-                base_path = pt
-        instance_path = (base_path / pl.Path(instance)).expanduser().resolve()
-        #Check if exists
-        if instance_path.exists():
-            return cls(instance_path, instance) 
-        else:
-            instance_path.mkdir(parents=True, exist_ok=True)
-            return cls(instance_path, instance) 
+    # @classmethod
+    # def create(cls, base: pl.Path | str, instance: str) -> "InstanceDataStore":
+    #     """
+    #     Class factory to create a new datastore instance given a base path. If the path already exists, just
+    #     returns the instance, if the path doesn't exists, the directory is created first.
+    #     """
+    #     match base:
+    #         case str(x):
+    #             base_path = pl.Path(x)
+    #         case pl.Path() as pt:
+    #             base_path = pt
+    #     instance_path = (base_path / pl.Path(instance)).expanduser().resolve()
+    #     #Check if exists
+    #     if instance_path.exists():
+    #         return cls(instance_path, instance) 
+    #     else:
+    #         instance_path.mkdir(parents=True, exist_ok=True)
+    #         return cls(instance_path, instance) 
 
 @dataclass
 class DataStore:
@@ -98,7 +114,7 @@ class DataStore:
         Create an instance of the DataStore given the base path, using
         the contained subfolders as instance stores
         """
-        instances = {i:InstanceDataStore.create(base_path, i) for i in instances}
+        instances = {i:InstanceDataStore(base_path, i) for i in instances}
         return cls(base_path, instances)
 
     @classmethod 
@@ -115,6 +131,6 @@ class DataStore:
         Add a new instance datastore to the current datastore
         :param instance: the id of the new datastore to add
         """
-        ni = InstanceDataStore.create(self.base_path, instance)
+        ni = InstanceDataStore(self.base_path, instance)
         self.instances.update({instance: ni})
 

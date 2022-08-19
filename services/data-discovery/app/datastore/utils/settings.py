@@ -1,9 +1,13 @@
+from dataclasses import dataclass
 import pydantic
 from pydantic import BaseSettings
 import pathlib as pl
 from typing import List,Dict, Any, Literal
 import yaml
 from functools import lru_cache
+
+
+
 
 def yaml_settings_source(settings: BaseSettings) -> Dict[str, Any]:
     """
@@ -21,6 +25,10 @@ class DataStoreSettings(BaseSettings):
     ldap_principal_name: str
     ldap_principal_password: str
     ldap_base: str
+    openbis_server: str
+    jws_secret_key: str
+    jws_algorithm:str = "HS256"
+    jws_access_token_expire_minutes = 30
     ldap_authentication: Literal['ANONYMOUS', 'SIMPLE', 'SASL', 'NTLM'] | None = 'SIMPLE'
     instances: List[str] | None = None 
     port: int = 8080

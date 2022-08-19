@@ -12,13 +12,23 @@ import aiofiles
 
 import os
 from datastore.services.ldap import session
+from datastore.services.auth import get_current_user
+
+router = APIRouter(prefix="/datasets")
 
 
-router = APIRouter()
+
+def get_user_instance(user: ldap.User = Depends(get_current_user)) -> files.InstanceDataStore:
+    """
+    Given an user info (as :obj:`ldap.User`) returns
+    the instance data store for that particular user
+    """
+    set = settings.get_settings()
+    return files.InstanceDataStore(set.base_path, user.group)
 
 
-@router.get("/datasets/find/")
-async def find_file(pattern: str, recent: float = float('inf'), conn: str = Depends(auth.authenticate)):
+@router.get("find/")
+async def find_file(pattern: str, recent: float = float('inf'), inst: files.InstanceDataStore = Depends(get_user_instance)):
     """
     Find all datasets in instance `instance` with
     the pattern `pattern`
@@ -26,7 +36,6 @@ async def find_file(pattern: str, recent: float = float('inf'), conn: str = Depe
     :params pattern: a glob pattern
     :params recent: the last modified duration
     """
-    inst = files.InstanceDataStore.create(settings.base_path, instance)
     fs = inst.list_files(pattern)
     if recent:
         fs_filt = [f for f in fs if files.get_modification_delay(f) < recent]
@@ -35,19 +44,18 @@ async def find_file(pattern: str, recent: float = float('inf'), conn: str = Depe
     info = [datasets.FileInfo.from_path(f).dict() for f in fs_filt]
     return {"files": info}
 
-@router.get("/{instance}/datasets/")
-async def list_files(instance: str):
+@router.get("/")
+async def list_files(inst: files.InstanceDataStore = Depends(get_user_instance)):
     """
     Find all datasets in instance`
-    :param instance: the name of a DataStore instance
+    :param user_info: user information
     """
-    inst = ds.get_instance(instance)
     fs = inst.list_files("*")
     info = [datasets.FileInfo.from_path(f).dict() for f in fs]
     return {"files": info}
 
 
-@router.post("/{instance}/datasets/")
+@router.post("/")
 async def upload_file(instance: str, name: str, file: UploadFile) -> None:
     """
     Upload a new file to the instance
@@ -65,7 +73,7 @@ async def upload_file(instance: str, name: str, file: UploadFile) -> None:
 
     return {"message": f"Successfuly uploaded {file.filename}"}
 
-@router.delete("/{instance}/datasets/")
+@router.delete("/")
 async def delete_file(instance: str, name: str) -> None:
     """
     Delete a file by name
