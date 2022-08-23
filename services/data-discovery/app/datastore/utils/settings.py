@@ -31,6 +31,7 @@ class DataStoreSettings(BaseSettings):
     jws_access_token_expire_minutes = 30
     ldap_authentication: Literal['ANONYMOUS', 'SIMPLE', 'SASL', 'NTLM'] | None = 'SIMPLE'
     instances: List[str] | None = None 
+    credentials_storage_key: str = None 
     port: int = 8080
     host: str = "localhost"
     class Config:

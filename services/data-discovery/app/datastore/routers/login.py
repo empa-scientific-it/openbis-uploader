@@ -11,7 +11,7 @@ import pathlib as pl
 import aiofiles
 from datetime import datetime, timedelta
 import os
-from datastore.services.ldap import session, ldap
+from datastore.services.ldap import session as ldap_session, ldap
 from datastore.utils import settings
 from passlib.context import CryptContext
 from jose import JWTError, jwt
@@ -21,35 +21,40 @@ from datastore.services import auth as auth_service
 from datastore.services import openbis as openbis_service
 from dataclasses import asdict
 
+from typing import Dict, Union
 
 router = APIRouter(prefix='/authorize')
 
 
-resource_servers = {
-    'LDAP': auth_service.ResourceServerLdap()
+#Initialise credentials store
+config = settings.get_settings()
+cred_context = auth_service.CredentialsContext(config.jws_secret_key, config.jws_secret_key, config.jws_algorithm, config.jws_access_token_expire_minutes)
+cred_store = auth_service.CredentialsStore(cred_context)
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
+#Bind LDAP principal
+ldap_principal_conn = ldap_session.get_ldap_connection() 
+
+#Initalise register of resource servers
+resource_servers: Dict[str, auth_service.ResourceServer] = {
+    'ldap': auth_service.ResourceServerLdap(cred_context, "ldap", ldap_principal_conn),
+    'openbis': auth_service.ResourceServerOpenBis(cred_context, "openbis", openbis_service.get_openbis())
 }
 
-@router.post("/ldap/",response_model=auth_models.Token)
-async def login(form_data: OAuth2PasswordRequestForm = Depends()):
-    config = settings.get_settings()
-    try:
-        with auth.authenticate(form_data.username, form_data.password) as ldap_user:
-            user_info = ldap.get_user_info(form_data.username)
-            access_token_expires = timedelta(minutes=config.jws_access_token_expire_minutes)
-            token_data = auth_models.TokenData(sub=form_data.username, dn=user_info.dn, group=user_info.group)
-            access_token = auth_service.create_access_token(
-                data=asdict(token_data), expires_delta=access_token_expires
-            )
-            
-        return {"access_token": access_token, "token_type": "bearer"}
-    except Exception as e:
-         raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Incorrect username or password",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
+
+@router.post("/{service}/token/", response_model=auth_models.Token)
+async def login(service: str, form_data: OAuth2PasswordRequestForm = Depends()):
+    rs = resource_servers[service]
+    token, cred = rs.login(form_data.username, form_data.password)
+    cred_store.store(token, service, cred)
+    return  {"access_token": token, "token_type": "bearer"}
+
+def get_user(service: str):
+    def _inner(token: str) -> openbis_service.OpenbisUser |  ldap.LdapUser:
+        return resource_servers[service].get_user_info(token)
+    return _inner
+
+@router.get("/{service}/me/", response_model= Union[openbis_service.OpenbisUser,  ldap.LdapUser])
+async def read_users_me(service: str, current_user: auth_models.User = Depends(get_user), token: str = Depends(oauth2_scheme)):
+    return current_user(token)
 
 
-@router.get("/me/", response_model=ldap.User)
-async def read_users_me(current_user: ldap.User = Depends(auth_service.get_current_user)):
-    return current_user

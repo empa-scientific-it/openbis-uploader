@@ -12,13 +12,15 @@ import aiofiles
 
 import os
 from datastore.services.ldap import session
-from datastore.services.auth import get_current_user
+from datastore.routers.login import get_user, oauth2_scheme, cred_store
 
 router = APIRouter(prefix="/datasets")
 
+async def get_ldap_user(token: str = Depends(oauth2_scheme)) -> ldap.LdapUser:
+    return get_user("ldap")(token)
 
-
-def get_user_instance(user: ldap.User = Depends(get_current_user)) -> files.InstanceDataStore:
+#user_getter: ldap.LdapUser = Depends(ldap_user_getter), token: str = Depends(oauth2_scheme)
+async def get_user_instance(user: ldap.LdapUser = Depends(get_ldap_user)) -> files.InstanceDataStore:
     """
     Given an user info (as :obj:`ldap.User`) returns
     the instance data store for that particular user
@@ -50,7 +52,9 @@ async def list_files(inst: files.InstanceDataStore = Depends(get_user_instance))
     Find all datasets in instance`
     :param user_info: user information
     """
+    import pytest; pytest.set_trace()
     fs = inst.list_files("*")
+    import pytest; pytest.set_trace()
     info = [datasets.FileInfo.from_path(f).dict() for f in fs]
     return {"files": info}
 
