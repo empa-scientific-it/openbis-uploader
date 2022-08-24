@@ -29,7 +29,7 @@ async def get_user_instance(user: ldap.LdapUser = Depends(get_ldap_user)) -> fil
     return files.InstanceDataStore(set.base_path, user.group)
 
 
-@router.get("find/")
+@router.get("/find")
 async def find_file(pattern: str, recent: float = float('inf'), inst: files.InstanceDataStore = Depends(get_user_instance)):
     """
     Find all datasets in instance `instance` with
@@ -52,20 +52,18 @@ async def list_files(inst: files.InstanceDataStore = Depends(get_user_instance))
     Find all datasets in instance`
     :param user_info: user information
     """
-    import pytest; pytest.set_trace()
     fs = inst.list_files("*")
-    import pytest; pytest.set_trace()
     info = [datasets.FileInfo.from_path(f).dict() for f in fs]
     return {"files": info}
 
 
 @router.post("/")
-async def upload_file(instance: str, name: str, file: UploadFile) -> None:
+async def upload_file(file: UploadFile, inst: files.InstanceDataStore = Depends(get_user_instance)) -> None:
     """
     Upload a new file to the instance
     """
-    inst = ds.get_instance(instance)
-    out_path = inst.path / name
+    out_path = inst.path / pl.Path(file.filename).name
+    import pytest; pytest.set_trace()
     try:
         contents = await file.read()
         async with aiofiles.open(out_path, 'wb') as f:
@@ -75,7 +73,7 @@ async def upload_file(instance: str, name: str, file: UploadFile) -> None:
     finally:
         await file.close()
 
-    return {"message": f"Successfuly uploaded {file.filename}"}
+    return {"message": f"Successfuly uploaded {file.filename} to {out_path}"}
 
 @router.delete("/")
 async def delete_file(instance: str, name: str) -> None:

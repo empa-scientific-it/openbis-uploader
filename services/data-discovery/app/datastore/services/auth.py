@@ -195,3 +195,4 @@ class ResourceServerOpenBis(ResourceServer):
         else:
             raise JWTError(f"Token {token} cannot be verified")
 
+

@@ -23,6 +23,8 @@ from dataclasses import asdict
 
 from typing import Dict, Union
 
+from pybis import Openbis
+
 router = APIRouter(prefix='/authorize')
 
 
@@ -52,6 +54,11 @@ def get_user(service: str):
     def _inner(token: str) -> openbis_service.OpenbisUser |  ldap.LdapUser:
         return resource_servers[service].get_user_info(token)
     return _inner
+
+def get_openbis(token: str =  Depends(oauth2_scheme)) -> Openbis:
+    if resource_servers["openbis"].verify(token):
+        return resource_servers['openbis'].openbis
+
 
 @router.get("/{service}/me/", response_model= Union[openbis_service.OpenbisUser,  ldap.LdapUser])
 async def read_users_me(service: str, current_user: auth_models.User = Depends(get_user), token: str = Depends(oauth2_scheme)):
