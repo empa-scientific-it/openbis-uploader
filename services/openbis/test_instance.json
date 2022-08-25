@@ -1,0 +1,49 @@
+{
+    "spaces": [
+        {
+            "code": "MEASUREMENTS",
+            "projects": [
+                {
+                    "code": "TEST",
+                    "collections": [
+                        {
+                            "code": "EXP1",
+                            "type": "DEFAULT_COLLECTION",
+                            "samples": [
+                                {"type":"ICP-MS-MEASUREMENT", "properties":{"sample_id":1}}
+                            ]
+                        }
+                    ]
+                }
+            ]
+        }
+    ],
+    "properties": [
+        {
+            "code": "SAMPLE_ID",
+            "label": "sample id",
+            "description": "Id of sample",
+            "data_type": "INTEGER"
+        },
+        {
+            "code": "MEASUREMENT_ID",
+            "label": "measurement id",
+            "description": "Id of measurements",
+            "data_type": "INTEGER"
+        }
+    ],
+    "collection_types": [
+        {
+            "code":"DEFAULT_COLLECTION",
+            "description":"DC",
+            "properties": ["MEASUREMENT_ID"]
+        }
+    ],
+    "object_types": [
+        {
+            "code": "ICP-MS-MEASUREMENT",
+            "prefix": "ICPMS_MEAS",
+            "properties": {"one":["SAMPLE_ID", "GAS_FLOW"]}
+    }
+    ]
+}
