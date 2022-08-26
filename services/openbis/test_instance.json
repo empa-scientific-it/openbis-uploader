@@ -10,8 +10,9 @@
                             "code": "EXP1",
                             "type": "DEFAULT_COLLECTION",
                             "samples": [
-                                {"type":"ICP-MS-MEASUREMENT", "properties":{"sample_id":1}}
-                            ]
+                                {"type":"ICP-MS-MEASUREMENT", "properties":{"sample_id":1, "gas_flow":0.1, "acq_timestamp":"2022-08-26T00:00:00Z"}}
+                            ],
+                            "properties": {"measurement_id": 1}
                         }
                     ]
                 }
@@ -21,15 +22,27 @@
     "properties": [
         {
             "code": "SAMPLE_ID",
-            "label": "sample id",
+            "label": "sample_id",
             "description": "Id of sample",
             "data_type": "INTEGER"
         },
         {
             "code": "MEASUREMENT_ID",
-            "label": "measurement id",
+            "label": "measurement_id",
             "description": "Id of measurements",
             "data_type": "INTEGER"
+        },
+        {
+            "code": "GAS_FLOW",
+            "label": "Gas_flow",
+            "description": "Gas flow",
+            "data_type": "REAL"
+        },
+        {
+            "code": "ACQ_TIMESTAMP",
+            "label": "Acquisiton_timestamp",
+            "description": "Timestamp of acquisition",
+            "data_type": "TIMESTAMP"
         }
     ],
     "collection_types": [
@@ -43,7 +56,7 @@
         {
             "code": "ICP-MS-MEASUREMENT",
             "prefix": "ICPMS_MEAS",
-            "properties": {"one":["SAMPLE_ID", "GAS_FLOW"]}
+            "properties": {"one":["SAMPLE_ID", "GAS_FLOW", "ACQ_TIMESTAMP"]}
     }
     ]
 }
