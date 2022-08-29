@@ -8,6 +8,7 @@ parser = ap.ArgumentParser(usage="create_test_structure.py your_instance:port ad
 parser.add_argument("url", type=str, help="Url to openbis instance")
 parser.add_argument("username", type=str, help="Username")
 parser.add_argument("password", type=str, help="password")
+parser.add_argument('what', type=str, choices=['create', 'export'])
 parser.add_argument("config", type=pl.Path, help="Path to json configuration file")
 parser.add_argument('--wipe', action="store_true", help="If set, wipes the instance clean before creating")
 args = parser.parse_args()
@@ -18,5 +19,12 @@ args = parser.parse_args()
 ob = pybis.Openbis(args.url,  verify_certificates=False, use_cache=False)
 ob.logout()
 ob.login(args.username, args.password)
-oi = OpenbisInstance.parse_file(args.config)
-oi.create(ob)
+match args.what:
+    case 'create':
+        if args.wipe:
+            oi = OpenbisInstance.reflect(ob)
+        oi = OpenbisInstance.parse_file(args.config)
+    case 'export':
+        instance_config = OpenbisInstance.reflect(ob).export(args.config)
+
+
