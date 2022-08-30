@@ -6,7 +6,6 @@
             "key":"700",
             "ldapGroupKeys": ["700"],
             "admins": ["basi"],
-            "users": ["basi", "baan"],
             "shareIds": ["2", "3"],
             "createUserSpace": true,
             "userSpaceRole" : "POWER_USER"
@@ -16,7 +15,6 @@
             "key":"503",
             "ldapGroupKeys": ["503"],
             "admins": ["hes"],
-            "users": ["hes", "brd"],
             "shareIds": ["2", "3"],
             "createUserSpace": true,
             "userSpaceRole" : "POWER_USER"
