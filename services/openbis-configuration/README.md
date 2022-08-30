@@ -26,12 +26,12 @@ Now the module is installed in your python envrionment. To avoid polluting your 
 ## Usage
 ### Commandline script
 
-The main entrypoint of this module is the command line utility  `make_instance.py`.
+The main entrypoint of this module is the command line utility  `create-instance`, which is implemented [here](./instance_creator/instance_creator/make_instance/py).
 
  To import a configuration residing in the file `test_instance.json` use:
 
 ```
-make_instance.py localhost:8443 admin changeit create ./test_instance.json
+create-instance localhost:8443 admin changeit create ./test_instance.json
 ```
 
 This connects to the OpenBis instance on `localhost` on port `8443` with the instance admin *admin* using password *changeit* and populates the instance with the data from the file `./test_instance.json`.
@@ -44,7 +44,7 @@ If an existing instance should be emptied from user-defined masterdata and data,
 To export an existing instance to JSON, use:
 
 ```
-make_instance.py localhost:8443 admin export create ./test_instance_exported.json
+create-instance localhost:8443 admin export create ./test_instance_exported.json
 ```
 This dumps the (user-defined) entries form the instance to the file `test_instance_exported.json`
 
