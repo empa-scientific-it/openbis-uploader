@@ -1,4 +1,22 @@
 
+""""
+Openbis instance configurator.
+Copyright (C) 2022 Simone Baffelli
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <https://www.gnu.org/licenses/>.
+"""
+
 from abc import ABC
 from ast import Pass
 from dataclasses import field
@@ -165,7 +183,7 @@ class OpenbisSpace(OpenbisTreeObject):
         return OpenbisSpace(code=self.code, projects = [OpenbisProject(code = pr.code, parent_id=self.parent_id + [self.code]).reflect(ob) for pr in projects], parent_id=self.parent_id)
  
 class OpenbisProperty(OpenbisGenericObject):
-    code: str 
+    code: str
     label: str
     description: str = Field(..., min_length=1)
     data_type: Literal["INTEGER", "VARCHAR", "MULTILINE_VARCHAR", "REAL", "TIMESTAMP", "BOOLEAN", "HYPERLINK", "XML", "CONTROLLEDVOCABULARY", "MATERIAL"]
@@ -313,6 +331,7 @@ class OpenbisInstance(OpenbisGenericObject):
         #Get all the tree
         dont_touch = ['ELN_SETTINGS', 'STORAGE', 'METHODS', 'MATERIALS', 'STOCK_CATALOG', 'STOCK_ORDERS', 'PUBLICATIONS']
         children = [OpenbisSpace(code=sp.code, parent_id=['/']).reflect(ob)  for sp in ob.get_spaces() if sp.code not in dont_touch]
+        breakpoint()
         return cls(object_types = object_types, collection_types = collection_types, properties = property_types, spaces=children)
 
 
