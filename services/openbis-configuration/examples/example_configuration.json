@@ -1,0 +1,49 @@
+{"spaces": [
+    {
+        "code": "SPACE1",
+        "projects": [
+            {
+                "code": "PROJ1",
+                "collections": [
+                    {
+                        "code": "COLL1",
+                        "type": "DEFAULT_EXPERIMENT",
+                        "samples": [
+                            {"type":"SAMPLE1", "properties":{"sample_id":1}}
+                        ],
+                        "properties": {"measurement_id": 1}
+                    }
+                ]
+            }
+        ]
+    }
+],
+"properties": [
+    {
+        "code": "SAMPLE_ID",
+        "label": "sample_id",
+        "description": "Id of sample",
+        "data_type": "INTEGER"
+    },
+    {
+        "code": "MEASUREMENT_ID",
+        "label": "measurement_id",
+        "description": "Id of Measurement",
+        "data_type": "INTEGER"
+    }
+],
+"collection_types": [
+    {
+        "code":"DEFAULT_COLLECTION",
+        "description":"DC",
+        "properties": ["MEASUREMENT_ID"]
+    }
+],
+"object_types": [
+    {
+        "code": "SAMPLE1",
+        "prefix": "ICPMS_MEAS",
+        "properties": {"one":["SAMPLE_ID"]}
+}
+]
+}

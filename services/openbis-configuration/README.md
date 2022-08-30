@@ -99,7 +99,7 @@ In summary, the spaces configuration for this example looks as follows:
                         "code": "COLL1",
                         "type": "DEFAULT_EXPERIMENT",
                         "samples": [
-                            {"type":"SAMPLE1", "properties":{"sample_id":1}
+                            {"type":"SAMPLE1", "properties":{"sample_id":1}}
                         ],
                         "properties": {"measurement_id": 1}
                     }
@@ -121,6 +121,12 @@ For *property types*, a list of dictionaries, one for each property
             "code": "SAMPLE_ID",
             "label": "sample_id",
             "description": "Id of sample",
+            "data_type": "INTEGER"
+        },
+        {
+            "code": "MEASUREMENT_ID",
+            "label": "measurement_id",
+            "description": "Id of Measurement",
             "data_type": "INTEGER"
         }
     ]
@@ -147,8 +153,8 @@ Finally, *object types* are defined in the same form:
             "properties": {"one":["SAMPLE_ID"]}
     }
     ]
-}
+
 ```
 the difference is that here `prefix` MUST be specified to generate object codes and that `properties` is a dict whith strings for keys and list of property names for entries. The keys serves to group properties in sections.
 
-An example configuration can be found in this repository under ```
+An example configuration can be found in this repository in this [file](./examples/example_configuration.json).
