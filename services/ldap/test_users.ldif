@@ -6,11 +6,13 @@ objectClass: organization
 dc: empa
 o: empa
 
-dn: ou=700,dc=empa,dc=ch
+#Users
+dn: ou=users,dc=empa,dc=ch
 objectClass: organizationalUnit
-ou: 700
+ou: users
 
-dn: uid=basi,ou=700,dc=empa,dc=ch
+
+dn: uid=basi,ou=users,dc=empa,dc=ch
 objectClass: inetOrgPerson
 objectClass: posixAccount
 objectClass: shadowAccount
@@ -24,7 +26,7 @@ uidNumber: 1000
 userPassword: {SHA}W6ph5Mm5Pz8GgiULbPgzG37mj9g=
 mail: simone.baffelli@empa.ch
 
-dn: uid=baan,ou=700,dc=empa,dc=ch
+dn: uid=baan,ou=users,dc=empa,dc=ch
 objectClass: inetOrgPerson
 objectClass: posixAccount
 objectClass: shadowAccount
@@ -38,13 +40,7 @@ uidNumber: 1001
 userPassword: {SHA}W6ph5Mm5Pz8GgiULbPgzG37mj9g=
 mail: anusch.bachofner@empa.ch
 
-
-dn: ou=503,dc=empa,dc=ch
-objectClass: organizationalUnit
-ou: 503
-description: Laboratory for Air Pollution / Environmental Technology
-
-dn: uid=hes,ou=503,dc=empa,dc=ch
+dn: uid=hes,ou=users,dc=empa,dc=ch
 objectClass: inetOrgPerson
 objectClass: posixAccount
 objectClass: shadowAccount
@@ -58,7 +54,7 @@ uidNumber: 1002
 userPassword: {SHA}W6ph5Mm5Pz8GgiULbPgzG37mj9g=
 mail: stephan.henne@empa.ch
 
-dn: uid=brd,ou=503,dc=empa,dc=ch
+dn: uid=brd,ou=users,dc=empa,dc=ch
 objectClass: inetOrgPerson
 objectClass: posixAccount
 objectClass: shadowAccount
@@ -80,7 +76,6 @@ description: LDAP admins
 
 
 
-
 dn: uid=admin,ou=ldap,dc=empa,dc=ch
 objectClass: inetOrgPerson
 objectClass: posixAccount
@@ -93,3 +88,30 @@ uid: admin
 uidNumber: 1003
 userPassword: {SHA}W6ph5Mm5Pz8GgiULbPgzG37mj9g=
 mail: admin@empa.ch
+
+
+#Groups 
+dn: ou=groups,dc=empa,dc=ch
+objectClass: organizationalUnit
+ou: groups
+description: Groups
+
+dn: cn=700,ou=groups,dc=empa,dc=ch
+objectClass: groupOfNames 
+objectClass: top
+cn: 700
+ou: groups
+member: uid=baan,ou=users,dc=empa,dc=ch
+member: uid=basi,ou=users,dc=empa,dc=ch
+description: Scientific IT
+
+
+dn: cn=503,ou=groups,dc=empa,dc=ch
+objectClass: groupOfNames 
+objectClass: top
+cn: 503
+ou: groups
+member: uid=brd,ou=users,dc=empa,dc=ch
+member: uid=hes,ou=users,dc=empa,dc=ch
+description: Air Quality
+

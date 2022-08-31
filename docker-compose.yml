@@ -1,3 +1,4 @@
+version: "4"
 services:
   data-discovery:
     build: ./services/data-discovery
@@ -6,6 +7,9 @@ services:
     hostname: data-discovery
     ports:
       - "8080:80"
+    depends_on:
+      - openbis
+      - ldap
     
   ldap:
     image: bitnami/openldap:latest
@@ -21,20 +25,38 @@ services:
       - '1636:1636'
   
   openbis:
-    build: ./services/openbis
+    image: openbis/debian-openbis:latest
     environment:
       - SERVER_HOST_PORT=localhost:443
-      - CORE_PLUGINS='enabled-modules = dropbox-monitor, dataset-uploader, dataset-file-search, xls-import, openbis-sync, eln-lims, openbis-ng-ui, search-store, user-management-maintenance'
+      - CORE_PLUGINS=enabled-modules = dropbox-monitor, dataset-uploader, dataset-file-search, xls-import, openbis-sync, eln-lims, openbis-ng-ui, search-store, user-management-maintenance
     volumes:
       - ./services/openbis/service.properties:/home/openbis/openbis_state/as_etc/service.properties
       - ./services/openbis/groups.json:/home/openbis/openbis_state/as_etc/groups.json
-      - ./builds/openbis:/home/openbis/openbis_state
+      - ./builds/openbis/:/home/openbis/openbis_state/
     ports:
       - "8443:443"
     hostname: openbis
     depends_on:
       - ldap
+    healthcheck:
+      test: ["CMD", "curl", "localhost:443"]
+      interval: 1m30s
+      timeout: 30s
+      retries: 5
+      start_period: 30s
 
+  openbis-configure:
+    build: 
+      context: ./services/
+      dockerfile: ./openbis-initialiser/Dockerfile
+    depends_on:
+      openbis:
+        condition: service_healthy
+    environment:
+      - OPENBIS_URL=openbis
+      - OPENBIS_PORT=443
+      - OPENBIS_ADMIN_USER=admin
+      - OPENBIS_ADMIN_PASSWORD=changeit
 
   frontend:
     build: 
@@ -45,3 +67,5 @@ services:
     command: sh -c "npm run dev"
     ports:
       - "8000:5173"
+    depends_on:
+      - data-discovery

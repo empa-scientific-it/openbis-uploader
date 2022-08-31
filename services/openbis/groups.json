@@ -1,4 +1,12 @@
 {
+    "globalSpaces": ["ELN_SETTINGS"],
+    "commonSpaces":
+    {
+        "ADMIN": [],
+        "OBSERVER": ["ELN_SETTINGS"],
+        "POWER_USER": [],
+        "USER": ["MATERIALS", "METHODS", "STORAGE", "STOCK_CATALOG", "EQUIPMENT"]
+    },
 	"groups": 
     [
         {
@@ -8,7 +16,8 @@
             "admins": ["basi"],
             "shareIds": ["2", "3"],
             "createUserSpace": true,
-            "userSpaceRole" : "POWER_USER"
+            "userSpaceRole" : "POWER_USER",
+            "useEmailAsUserId": "true"
         },
         {
             "name":"Air Quality",
@@ -17,7 +26,8 @@
             "admins": ["hes"],
             "shareIds": ["2", "3"],
             "createUserSpace": true,
-            "userSpaceRole" : "POWER_USER"
+            "userSpaceRole" : "POWER_USER",
+            "useEmailAsUserId": "true"
         }
     ]
 }

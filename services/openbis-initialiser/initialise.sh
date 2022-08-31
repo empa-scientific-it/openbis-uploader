@@ -1,0 +1,1 @@
+create-instance "${OPENBIS_URL}":"${OPENBIS_PORT}" "${OPENBIS_ADMIN_USER}" "${OPENBIS_ADMIN_PASSWORD}" create ./config/instance.json
