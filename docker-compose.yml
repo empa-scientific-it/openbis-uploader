@@ -1,15 +1,30 @@
 version: "3.9"
 services:
   data-discovery:
-    build: ./services/data-discovery
+    build: 
+      context: ./services/
+      dockerfile: ./data-discovery/Dockerfile
     volumes:
       - ./services/data-discovery/app:/app/
+      - ./shares/:/shares
+      - ./services/openbis-configuration/instance_creator:/instance_creator
     hostname: data-discovery
     ports:
       - "8080:80"
     depends_on:
       - openbis
       - ldap
+    environment:
+      - BASE_PATH=/shares
+      - LDAP_SERVER=ldap
+      - LDAP_PORT=1389
+      - LDAP_PRINCIPAL_NAME=cn=admin,dc=empa,dc=ch
+      - LDAP_PRINCIPAL_PASSWORD=password
+      - LDAP_BASE=dc=empa,dc=ch
+      - OPENBIS_SERVER=https://openbis:443
+      - JWS_SECRET_KEY=72f0337b7a0ba5efc612af93bd75e5ff305e329acee0cfa57bd15b843b5789f3
+      - CREDENTIALS_STORAGE_KEY=428c9416c004ea21fcfe3480d3b84d92306784bea452d3a249cdcf9e6250eeb8
+
     
   ldap:
     image: bitnami/openldap:latest
