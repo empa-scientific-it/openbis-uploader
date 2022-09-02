@@ -21,7 +21,6 @@ import argparse as ap
 import pybis
 import pathlib as pl
 from instance_creator.models import OpenbisInstance
-
 def main():
     parser = ap.ArgumentParser(usage="create_test_structure.py your_instance:port admin_user admin_password config_file.json")
     parser.add_argument("url", type=str, help="Url to openbis instance")
@@ -42,7 +41,8 @@ def main():
         case 'create':
             if args.wipe:
                 oi = OpenbisInstance.reflect(ob)
-            oi = OpenbisInstance.parse_file(args.config)
+            breakpoint()
+            oi = OpenbisInstance.parse_file(args.config).create(ob)
         case 'export':
             instance_config = OpenbisInstance.reflect(ob).export(args.config)
 

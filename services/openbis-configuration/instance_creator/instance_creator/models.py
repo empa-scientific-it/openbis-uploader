@@ -23,7 +23,7 @@ from dataclasses import field
 from re import S
 from typing import Callable, Any, Dict, List, Literal, Type, TypeVar, Union
 import pybis
-from pybis.pybis import PropertyType, Space, SampleType, ExperimentType, Project, OpenBisObject, Experiment, Things, Sample, DataSetType, DataSet
+from pybis.pybis import PropertyType, Space, SampleType, ExperimentType, Project, OpenBisObject, Experiment, Things, Sample, DataSetType, DataSet, Person
 from pydantic.dataclasses import dataclass
 from pydantic import BaseModel, Field, validator, root_validator
 import pathlib as pl
@@ -45,6 +45,65 @@ class OpenbisGenericObject(ABC, BaseModel, TreeObject):
     
     def reflect(self, ob: pybis.Openbis) -> 'OpenbisGenericObject':
         pass
+
+class OpenbisRoleAssignment(OpenbisGenericObject):
+    """
+    Class to represent openbis role assignment for an unser
+    """
+    techid: int = None
+    user: str | None = None
+    role: Literal["OBSERVER", "POWER_USER", "ADMIN", "ETL_SERVER", "USER"]  = None
+    level: Literal["INSTANCE","SPACE","PROJECT"]  = None
+    space: str | None = None
+    group: str | None = None
+    project: str | None = None
+
+    def get_ob_object(self, ob: pybis.Openbis) -> 'OpenBisObject':
+        return ob.get_role_assignment(self.techid)
+
+    def reflect(self, ob: pybis.Openbis) -> 'OpenbisRoleAssignment':
+        ra = self.get_ob_object(ob)
+        sp = ra.space.code if ra.space else None
+        pr = ra.project.code if ra.project else None
+        return OpenbisRoleAssignment(techid=int(ra.id), user=ra.user, role=ra.role, level=ra.roleLevel, space=sp, project=pr)
+    
+    def create(self, ob: pybis.Openbis):
+        user = ob.get_user(self.user)
+        match self.level, user:
+            case _, None:
+                raise ValueError(f"Could not find user with id {self.user}")
+            case "INSTANCE", _:
+                match self.role:
+                    case "ADMIN" | "OBSERVER":
+                        user.assign_role(self.role)
+                        user.save()
+                    case _:
+                        raise ValueError(f"Cannot assign role {self.role} to instance")
+            case "SPACE", _:
+                    match self.role:
+                        case "POWER_USER" | "USER" | "OBSERVER" | "ADMIN":
+                            u = user.assign_role(self.role, space=self.space)
+                            user.save()
+                        case _:
+                            raise ValueError(f"Cannot assign role {self.role} to space")
+    
+            case _, _:
+                raise NotImplementedError("Project-level assignment not implemented")
+
+class OpenbisUser(OpenbisGenericObject):
+    userid: str = None
+    first_name: str = None
+    last_name: str = None
+    space: str = None
+    roles: List[OpenbisRoleAssignment] | None = None
+
+    def get_ob_object(self, ob: pybis.Openbis) -> Person:
+        return ob.get_user(self.userid)
+    
+    def reflect(self, ob: pybis.Openbis) -> 'OpenbisUser':
+        po = self.get_ob_object(ob)
+        return OpenbisUser(userid = po.userId, first_name= po.firstName, last_name=po.lastName)
+
 
 class OpenbisTreeObject(OpenbisGenericObject):
     """
@@ -287,16 +346,27 @@ class OpenbisInstance(OpenbisGenericObject):
     collection_types: List[OpenbisCollectionType] | None = None
     properties: List[OpenbisProperty] | None = None
     dataset_types: List[OpenbisDatasetType] | None = None
-
+    users: List[OpenbisUser] | None = None
+    roles: List[OpenbisRoleAssignment] | None = None
     def create(self, ob: pybis.Openbis):
-        for prop in self.properties:
-            prop.create(ob)
-        for ot in self.object_types:
-            ot.create(ob)
-        for ot in self.collection_types:
-            ot.create(ob)
-        for sp in self.children:
-            sp.create(ob)
+        if self.properties:
+            for prop in self.properties:
+                prop.create(ob)
+        if self.object_types:
+            for ot in self.object_types:
+                ot.create(ob)
+        if self.collection_types:
+            for ot in self.collection_types:
+                ot.create(ob)
+        if self.children:
+            for sp in self.children:
+                sp.create(ob)
+        if self.users:
+            for sp in self.users:
+                sp.create(ob)
+        if self.roles:
+            for sp in self.roles:
+                sp.create(ob)
     
     def wipe(self, ob: pybis.Openbis):
         for sp in self.children:
@@ -331,8 +401,11 @@ class OpenbisInstance(OpenbisGenericObject):
         #Get all the tree
         dont_touch = ['ELN_SETTINGS', 'STORAGE', 'METHODS', 'MATERIALS', 'STOCK_CATALOG', 'STOCK_ORDERS', 'PUBLICATIONS']
         children = [OpenbisSpace(code=sp.code, parent_id=['/']).reflect(ob)  for sp in ob.get_spaces() if sp.code not in dont_touch]
-        breakpoint()
-        return cls(object_types = object_types, collection_types = collection_types, properties = property_types, spaces=children)
+        #Reflect users
+        users = [OpenbisUser(userid=ui).reflect(ob) for ui in ob.get_users().df.userId]
+        #Reflect role assignments
+        roles = [OpenbisRoleAssignment(techid=ui).reflect(ob) for ui in ob.get_role_assignments().df.techId.astype(int)]
+        return cls(object_types = object_types, collection_types = collection_types, properties = property_types, spaces=children, users=users, roles=roles)
 
 
     @root_validator(pre=False)
