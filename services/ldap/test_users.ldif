@@ -90,8 +90,6 @@ mail: admin@empa.ch
 
 
 
-
-
 dn: cn=700,ou=users,dc=empa,dc=ch
 objectClass: groupOfNames
 cn: 700

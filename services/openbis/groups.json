@@ -1,33 +1,25 @@
 {
-    "globalSpaces": ["ELN_SETTINGS"],
-    "commonSpaces":
-    {
-        "ADMIN": [],
-        "OBSERVER": ["ELN_SETTINGS"],
-        "POWER_USER": [],
-        "USER": ["MATERIALS", "METHODS", "STORAGE", "STOCK_CATALOG", "EQUIPMENT"]
-    },
 	"groups": 
     [
         {
             "name":"Scientific IT",
             "key":"700",
-            "ldapGroupKeys": ["700"],
+            "ldapGroupKeys": ["cn=700,ou=users,dc=empa,dc=ch"],
             "admins": ["basi"],
             "shareIds": ["2", "3"],
-            "createUserSpace": true,
+            "createUserSpace": false,
             "userSpaceRole" : "POWER_USER",
-            "useEmailAsUserId": "true"
+            "useEmailAsUserId": "false"
         },
         {
             "name":"Air Quality",
             "key":"503",
-            "ldapGroupKeys": ["503"],
+            "ldapGroupKeys": ["cn=503,ou=users,dc=empa,dc=ch"],
             "admins": ["hes"],
             "shareIds": ["2", "3"],
-            "createUserSpace": true,
+            "createUserSpace": false,
             "userSpaceRole" : "POWER_USER",
-            "useEmailAsUserId": "true"
+            "useEmailAsUserId": "false"
         }
     ]
 }
