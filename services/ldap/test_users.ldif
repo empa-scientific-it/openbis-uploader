@@ -1,10 +1,9 @@
-version: 1
 
 dn: dc=empa,dc=ch
 objectClass: dcObject
 objectClass: organization
 dc: empa
-o: empa
+o: example
 
 #Users
 dn: ou=users,dc=empa,dc=ch
@@ -68,12 +67,10 @@ uidNumber: 1003
 userPassword: {SHA}W6ph5Mm5Pz8GgiULbPgzG37mj9g=
 mail: domniki.brunner@empa.ch
 
-
 dn: ou=ldap,dc=empa,dc=ch
 objectClass: organizationalUnit
 ou: ldap
 description: LDAP admins
-
 
 
 dn: uid=admin,ou=ldap,dc=empa,dc=ch
@@ -83,35 +80,31 @@ objectClass: shadowAccount
 cn: LDAP Admin 
 gidNumber: 1004
 homeDirectory: /home/admin
-sn: admin	
+sn: admin   	
 uid: admin
 uidNumber: 1003
 userPassword: {SHA}W6ph5Mm5Pz8GgiULbPgzG37mj9g=
 mail: admin@empa.ch
 
 
-#Groups 
-dn: ou=groups,dc=empa,dc=ch
-objectClass: organizationalUnit
-ou: groups
-description: Groups
 
-dn: cn=700,ou=groups,dc=empa,dc=ch
-objectClass: groupOfNames 
-objectClass: top
+
+
+
+
+dn: cn=700,ou=users,dc=empa,dc=ch
+objectClass: groupOfNames
 cn: 700
-ou: groups
+ou: users
 member: uid=baan,ou=users,dc=empa,dc=ch
 member: uid=basi,ou=users,dc=empa,dc=ch
 description: Scientific IT
 
 
-dn: cn=503,ou=groups,dc=empa,dc=ch
-objectClass: groupOfNames 
-objectClass: top
+dn: cn=503,ou=users,dc=empa,dc=ch
+objectClass: groupOfNames
 cn: 503
-ou: groups
+ou: users
 member: uid=brd,ou=users,dc=empa,dc=ch
 member: uid=hes,ou=users,dc=empa,dc=ch
 description: Air Quality
-

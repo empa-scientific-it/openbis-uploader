@@ -1,4 +1,4 @@
-version: "4"
+version: "3.9"
 services:
   data-discovery:
     build: ./services/data-discovery
@@ -18,14 +18,24 @@ services:
       - LDAP_ROOT=dc=empa,dc=ch
       - LDAP_ADMIN_USERNAME=admin 
       - LDAP_ADMIN_PASSWORD=password 
+      - LDAP_EXTRA_SCHEMAS=cosine,inetorgperson,nis,memberof
     volumes:
-        - ./services/ldap:/ldifs
+        - './services/ldap/memberof.ldif:/opt/bitnami/openldap/etc/schema/memberof.ldif'
+        - ./services/ldap/test_users.ldif:/ldifs/test_users.ldif
+    hostname: ldap
     ports:
-      - '1389:1389'
-      - '1636:1636'
+      - "1389:1389"
+      - "1636:1636"
+    # healthcheck:
+    #   test: ["CMD", "ldapsearch", "-h", "ldap://ldap:1389"]
+    #   interval: 1m30s
+    #   timeout: 30s
+    #   retries: 5
+    #   start_period: 30s
   
   openbis:
-    image: openbis/debian-openbis:latest
+    build: ./services/openbis
+    #image: openbis/debian-openbis:latest
     environment:
       - SERVER_HOST_PORT=localhost:443
       - CORE_PLUGINS=enabled-modules = dropbox-monitor, dataset-uploader, dataset-file-search, xls-import, openbis-sync, eln-lims, openbis-ng-ui, search-store, user-management-maintenance
