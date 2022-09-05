@@ -1,6 +1,7 @@
 
 from dataclasses import dataclass, asdict
 import dataclasses
+from multiprocessing.util import abstract_sockets_supported
 from platform import python_revision
 from wsgiref import validate
 from fastapi import Depends, HTTPException, status
@@ -15,7 +16,7 @@ from datastore.utils import settings
 from jose import JWTError, jwt
 import bcrypt
 
-from typing import Dict, Tuple, Optional, List
+from typing import Dict, Tuple, Optional, List, Set
 
 from abc import ABC, abstractmethod
 
@@ -50,7 +51,7 @@ class CredentialsContext:
         encoded_jwt = jwt.encode(data.dict() | {"exp": access_token_expires.timestamp()}, self.secret_key, algorithm=self.algorithm)
         return encoded_jwt
 
-    def decode_access_token(self, token: str, audience: str) -> auth_models.TokenData:
+    def decode_access_token(self, token: str, audience: List[str]) -> auth_models.TokenData:
         """
         Given a JWT token, decodes it
         """
@@ -65,43 +66,66 @@ class CredentialsContext:
         except JWTError:
             raise credentials_exception
 
-    def store(self, jwt_token: str, audience: str, secret: str):
-        """
-        Stores an entry (token/password) of (jwt token)
-        """       
-        payload = self.decode_access_token(jwt_token, audience)
-        creds = Credentials(payload.sub, secret, payload.aud)
-        self.items.update({jwt_token: creds})
-
-    def retreive(self, jwt_token: str) -> Optional[Credentials]:
-        """
-        Given an url and the corresponding user, retreive
-        the token, user tuple (if available)
-        """
-        self.items.get(jwt_token)
-
 @dataclass
 class CredentialsStore:
+    """
+    A in-memory credential store
+    """
     context: CredentialsContext
     items: Dict[Tuple[str, str], Credentials] = dataclasses.field(default_factory=lambda: {})
+    invalidated: Set[str] = dataclasses.field(default_factory=lambda: set())
+
+
+    def is_valid(self, key: str) -> bool:
+        return key not in self.invalidated
+    
+    def decode_all(self, key: str, audiences: List[str]) -> List[str]:
+        """
+        Given a token and a list of audiences,
+        check if all the claims are fullfilled
+        """
+        def handle(key: str, audience: str) -> str:
+            try:
+                jwt.decode(key, self.context.secret_key, self.context.algorithm, audience=audience)
+                return audience
+            except JWTError:
+                return None
+        return [aud  for aud in audiences if handle(key, aud)]
 
     def store(self, key: str, audience: str, cred: Credentials) -> None:
-        try:
-            jwt.decode(key, self.context.secret_key, self.context.algorithm, audience=audience)
-            self.items.update({(key, audience): cred})
-        except JWTError as e:
-            raise KeyError(f"The JWT token {key} cannot be validated")
+        if self.is_valid(key):
+            try:
+                valid = self.decode_all(key, audience)
+                for v in valid:
+                    self.items.update({(key, v): cred})
+            except JWTError as e:
+                raise KeyError(f"The JWT token {key} cannot be validated")
+            except KeyError as e:
+                raise KeyError(e)
+        else:
+            raise JWTError("This token has been invalidated")
 
     def retreive(self, key: str, audience: str) -> Credentials:
-        try:
-            jwt.decode(key, self.context.secret_key, self.context.algorithm, audience=audience)
-            return self.items[(key, audience)]
-        except JWTError as e:
-            raise KeyError(f"The JWT token {key} cannot be validated")
-        except KeyError as e:
-            raise KeyError(f"No such credentials ({key}, {audience}) are stored")
+        if self.is_valid(key):
+            try:
+                valid = self.decode_all(key, audience)
+                if audience in valid:
+                    return self.items[(key, audience)]
+                else:
+                    raise KeyError(f"No such credentials ({key}, {audience}) are stored or they were invalidated")
+            except JWTError as e:
+                raise KeyError(f"The JWT token {key} cannot be validated")
+            except KeyError as e:
+                raise KeyError(f"No such credentials ({key}, {audience}) are stored or they were invalidated")
+        else:
+            raise JWTError("This token has been invalidated")
     
-
+    def remove(self, key: str, audience: str) -> None:
+        """
+        Removes the token by moving it to the list of invalidated tokens
+        """
+        self.items.pop((key, audience))
+        self.invalidated.add(key)
 
 
 @dataclass
@@ -135,6 +159,11 @@ class ResourceServer(ABC):
     @abstractmethod
     def get_user_info(self, token:str) -> auth_models.User:
         pass 
+    
+    @abstractmethod
+    def logout(self, token: str) -> None:
+        pass
+
 
 @dataclass
 class ResourceServerLdap(ResourceServer):
@@ -145,9 +174,12 @@ class ResourceServerLdap(ResourceServer):
     def login(self, username: str, password:str) -> Tuple[str, Credentials]:
         with self.principal_connection as pc:
             with ldap.auth.authenticate(pc, username, password) as con:
-                token = self.context.create_access_token(auth_models.TokenData(aud=self.id, sub=username))
+                token = self.context.create_access_token(auth_models.TokenData(aud=[self.id], sub=username))
                 cd = Credentials(sub=username, aud=self.id, secret=password)
                 return token, cd
+
+    def logout(self, token: str) -> None:
+        pass
 
     def verify(self, token: str) -> bool:
         token_data = self.context.decode_access_token(token, self.id)
@@ -173,9 +205,13 @@ class ResourceServerOpenBis(ResourceServer):
 
     def login(self, username: str, password: str) -> Tuple[str, Credentials]:
         openbis_token = self.openbis.login(username, password)
-        token = self.context.create_access_token(auth_models.TokenData(aud= self.id, sub=username))
-        cd = Credentials(sub=username, aud=self.id, secret=openbis_token)
+        token = self.context.create_access_token(auth_models.TokenData(aud= [self.id], sub=username))
+        cd = Credentials(sub=username, aud=[self.id], secret=openbis_token)
         return token, cd
+
+    def logout(self, token: str) -> None:
+        if self.verify(token):
+            self.openbis.logout()
 
     def verify(self, token: str) -> bool:
         token_data = self.context.decode_access_token(token, self.id)
@@ -187,11 +223,11 @@ class ResourceServerOpenBis(ResourceServer):
             user =  self.openbis.get_user(token_data.sub)
             match user:
                 case pybis.person.Person():
-                    return openbis_service.OpenbisUser(token_data.sub, user.space.permId, user.permId)
+                    sp = user.space.permID if user.space else None
+                    return openbis_service.OpenbisUser(token_data.sub, sp, user.permId)
                 case None:
                     raise ValueError(f"Openbis Person with UID {token_data.sub} not found")
-                case Any:
-                    return user
+
         else:
             raise JWTError(f"Token {token} cannot be verified")
 

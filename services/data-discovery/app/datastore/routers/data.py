@@ -17,16 +17,21 @@ from datastore.routers.login import get_user, oauth2_scheme, cred_store
 router = APIRouter(prefix="/datasets")
 
 async def get_ldap_user(token: str = Depends(oauth2_scheme)) -> ldap.LdapUser:
+    """
+    Given a token (as a dependence),
+    return a LdapUser object containing the user information
+    """
     return get_user("ldap")(token)
 
-#user_getter: ldap.LdapUser = Depends(ldap_user_getter), token: str = Depends(oauth2_scheme)
 async def get_user_instance(user: ldap.LdapUser = Depends(get_ldap_user)) -> files.InstanceDataStore:
     """
     Given an user info (as :obj:`ldap.User`) returns
     the instance data store for that particular user
     """
     set = settings.get_settings()
-    return files.InstanceDataStore(set.base_path, user.group)
+    import pytest; pytest.set_trace()
+    group = ldap.decompose_dn(user.group[0])[set.ldap_group_attribute]
+    return files.InstanceDataStore(set.base_path, group)
 
 
 @router.get("/find")

@@ -7,6 +7,7 @@ from fastapi.testclient import TestClient
 from datastore.routers import login, data, openbis
 from datastore.utils import settings
 from datastore.utils import files
+from datastore.services.ldap import ldap
 import os
 from typing import Dict, Any
 import pytest
@@ -25,7 +26,11 @@ def client() -> TestClient:
 @pytest.fixture
 def login_data() -> Dict[str, str]:
     def _inner(service:str, user:str = 'basi'):
-        creds = {'ldap':[dict(username = "basi", password="password"), dict(username='baan', password="password")],'openbis':[dict(username = "basi", password="password"), dict(username='baan', password="password")]}
+        creds = {
+            'ldap':[dict(username = "basi", password="password"), dict(username='baan', password="password")],
+            'all':[dict(username = "basi", password="password"), dict(username='baan', password="password")],
+            'openbis':[dict(username = "basi", password="password"), dict(username='baan', password="password"), dict(username='admin', password='changeit')]
+        }
         return [c for c in creds[service] if c['username'] == user][0]
     return _inner
 
@@ -43,8 +48,8 @@ def token(client, login_data) -> Dict[Any, Any]:
 def temp_files(client, token):
     app_settings = settings.get_settings()
     response = client.get("/authorize/ldap/me/", headers=token("ldap"))
-    print(response.json())
-    ds = files.InstanceDataStore(app_settings.base_path, response.json()['group'])
+    groups = ldap.decompose_dn(response.json()['group'][0])[app_settings.ldap_group_attribute]
+    ds = files.InstanceDataStore(app_settings.base_path, groups)
     cf = tf.NamedTemporaryFile(dir = ds.path)
     yield cf
     cf.close()
@@ -76,6 +81,17 @@ def test_multiple_auth(client, login_data):
     resps = [get_user(u) for u in ['baan', 'basi']]
     assert (resps[0].json()['username'] != resps[1].json())
 
+
+def test_invalidation(client:TestClient, login_data):
+    token_req = client.post("/authorize/openbis/token/", data=login_data("openbis"))
+    token = token_req.json()['access_token']
+    headers = {"Authorization": f"Bearer {token}"}
+    invalid = client.get("/authorize/openbis/logout/", headers=headers)
+    should_fail = client.get("/authorize/openbis/me/", headers=headers)
+    assert should_fail.status_code == 401
+
+   
+
 def test_token(client:TestClient, login_data):
     token_req = client.post("/authorize/openbis/token/", data=login_data("openbis"))
     token = token_req.json()['access_token']
@@ -83,10 +99,36 @@ def test_token(client:TestClient, login_data):
     response = client.get("/authorize/openbis/me/", headers=headers)
     assert (response.status_code == 200) & (response.json()['username'] == login_data("openbis")['username'])
 
+
+def test_get_ldap_groups(client, token):
+    resp = client.get("/authorize/ldap/me", headers=token("ldap"))
+    assert resp.json()['group'][0] == 'cn=700,ou=users,dc=empa,dc=ch'
+
+
+
+def test_login_all(client: TestClient, login_data):
+    token_req = client.post("/authorize/all/token/", data=login_data("all"))
+    token_resp = token_req.json()['access_token']
+    tok = {"Authorization": f"Bearer {token_resp}"}
+    resp_ob = client.get("/authorize/openbis/me", headers=tok)
+    resp_ldap = client.get("/authorize/ldap/me", headers=tok)
+    assert (resp_ob.status_code == 200) & (resp_ldap.status_code == 200)
+
+
+def test_token_validation(client: TestClient, login_data):
+    token_req = client.post("/authorize/all/token/", data=login_data("all"))
+    token_resp = token_req.json()['access_token']
+    tok = {"Authorization": f"Bearer {token_resp}"}
+    resp_ob = client.get("/authorize/all/check", headers=tok)
+    assert (resp_ob.status_code == 200) &   (resp_ob.json())
+
+
+
+
 def test_list_files(client, token, temp_files):
     resp = client.get("/datasets/", headers=token("ldap"))
     files = resp.json()
-    assert files['files'][0]['path'] == temp_files.name
+    assert temp_files.name in [f['path'] for f in files['files']]
 
 
 def test_post_file(client, token):
@@ -99,5 +141,5 @@ def test_post_file(client, token):
 
 
 def test_openbis(client, token):
-    resp = client.get(f"/openbis/tree/", headers=token("openbis", "baan"))
+    resp = client.get(f"/openbis/tree/", headers=token("openbis", "basi"))
     pytest.set_trace()

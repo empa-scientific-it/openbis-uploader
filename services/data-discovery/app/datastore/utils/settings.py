@@ -5,7 +5,7 @@ import pathlib as pl
 from typing import List,Dict, Any, Literal
 import yaml
 from functools import lru_cache
-
+from fastapi.logger import logger
 
 
 
@@ -15,11 +15,13 @@ def yaml_settings_source(settings: BaseSettings) -> Dict[str, Any]:
     """
     return yaml.load(pl.Path('config.yml').read_text(), yaml.Loader)
 
+
 class DataStoreSettings(BaseSettings):
     """
     Class to represent the settings of the datastore
     """
     base_path: pl.Path = pl.Path('/usr/stores/') 
+    ldap_group_attribute:str = 'cn'
     ldap_server: str
     ldap_port: int
     ldap_principal_name: str
@@ -35,6 +37,8 @@ class DataStoreSettings(BaseSettings):
     port: int = 8080
     host: str = "localhost"
     class Config:
+        env_prefix = ""
+        case_sensitive = False
         env_file = pl.Path(__file__).resolve().parent.parent.parent / ".env"
         @classmethod
         def customise_sources(
@@ -44,10 +48,10 @@ class DataStoreSettings(BaseSettings):
             file_secret_settings,
         ):
             return (
-                env_settings,
-                file_secret_settings,
+                env_settings, init_settings
             )
 
 @lru_cache()
 def get_settings() -> DataStoreSettings:
+    logger.info("Here")
     return DataStoreSettings()

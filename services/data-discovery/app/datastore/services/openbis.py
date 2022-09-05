@@ -9,12 +9,16 @@ from datastore.models import auth as auth_models
 
 @dataclass
 class OpenbisUser(auth_models.User):
-    space: str
-    permid: str
+    space: str | None
+    permid: str | None 
 
 def get_openbis() -> pybis.Openbis:
     config = settings.get_settings()
     return pybis.Openbis(config.openbis_server, verify_certificates=False, use_cache=False)
+
+def get_user_instance() -> pybis.Openbis:
+    """
+    """
 
 @contextlib.contextmanager
 def openbis_login(username: str, password: str) -> str:
