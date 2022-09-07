@@ -29,7 +29,6 @@ async def get_user_instance(user: ldap.LdapUser = Depends(get_ldap_user)) -> fil
     the instance data store for that particular user
     """
     set = settings.get_settings()
-    import pytest; pytest.set_trace()
     group = ldap.decompose_dn(user.group[0])[set.ldap_group_attribute]
     return files.InstanceDataStore(set.base_path, group)
 
@@ -59,6 +58,8 @@ async def list_files(inst: files.InstanceDataStore = Depends(get_user_instance))
     """
     fs = inst.list_files("*")
     info = [datasets.FileInfo.from_path(f).dict() for f in fs]
+    print(inst)
+    print(info)
     return {"files": info}
 
 

@@ -1,18 +1,9 @@
-from inspect import ArgSpec
-from typing import Callable
 from fastapi import FastAPI, File, UploadFile, Depends
-from datastore.utils import files, settings
-from datastore.models import datasets
-from datastore.services.ldap import auth, ldap, session
-
-
+from datastore.routers import data, login, openbis
+from datastore.utils import settings
 import uvicorn
 import argparse as ap
-import pathlib as pl
-import aiofiles
-
-import os
-from datastore.services.ldap import session
+from fastapi.logger import logger
 
 from datastore.routers import login
 
@@ -25,10 +16,21 @@ To configure the app, edit `.env` in the main directory
 """
 
 
+parser = ap.ArgumentParser(description="Run data discovery backedn servrice")
+parser.add_argument("--host", type=str, help='Host to run the app on', default='0.0.0.0')
+parser.add_argument("--port", type=int, help='Port to run the app on', default=8080)
+args = parser.parse_args()
+
+
+#Create app
+app = FastAPI()
+app.include_router(login.router)
+app.include_router(data.router)
+app.include_router(openbis.router)
 
 
 
 #Serve the app
-serve(app)
+serve(app, args.host, args.port)
 
 

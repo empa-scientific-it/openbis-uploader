@@ -1,4 +1,4 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, logger
 
 from fastapi import FastAPI, File, UploadFile, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
@@ -28,6 +28,8 @@ from pybis import Openbis
 router = APIRouter(prefix='/authorize')
 
 
+
+
 #Initialise credentials store
 config = settings.get_settings()
 cred_context = auth_service.CredentialsContext(config.jws_secret_key, config.jws_secret_key, config.jws_algorithm, config.jws_access_token_expire_minutes)
@@ -43,17 +45,25 @@ resource_servers: Dict[str, auth_service.ResourceServer] = {
 }
 
 
+# @router.on_event("shutdown")
+# def shutdown_event():
+#     resource_servers['openbis'].openbis.logout()
+
 async def login_all(form_data: OAuth2PasswordRequestForm = Depends()):
     """
     Using a single login, create a JWT token with audiences for all services
     """
     rs = resource_servers["openbis"]
     services = list(resource_servers.keys())
+    print(form_data.username, form_data.password)
     token, cred = rs.login(form_data.username, form_data.password)
     #Create a token for all audiences
-    all_token = cred_context.create_access_token(auth_models.TokenData(sub=form_data.username, aud=services, exp=60))
-    cred_store.store(all_token, services, cred)
-    return  {"access_token": all_token, "token_type": "bearer"}
+    if token:
+        all_token = cred_context.create_access_token(auth_models.TokenData(sub=form_data.username, aud=services, exp=60))
+        cred_store.store(all_token, services, cred)
+        return  {"access_token": all_token, "token_type": "bearer"}
+    else:
+        raise HTTPException(401)
 
 async def login_single(service: str, form_data: OAuth2PasswordRequestForm = Depends()):
     rs = resource_servers[service]
@@ -62,8 +72,9 @@ async def login_single(service: str, form_data: OAuth2PasswordRequestForm = Depe
     return  {"access_token": token, "token_type": "bearer"}
 
 
-@router.post("/{service}/token/", response_model=auth_models.Token)
+@router.post("/{service}/token", response_model=auth_models.Token)
 async def login(service: str, form_data: OAuth2PasswordRequestForm = Depends()):
+    logger.logger.info(form_data)
     if service != 'all':
         return await login_single(service, form_data)
     else:
@@ -72,30 +83,42 @@ async def login(service: str, form_data: OAuth2PasswordRequestForm = Depends()):
 
 
 
-async def check_single_token(service: str, token: str =  Depends(oauth2_scheme)) -> bool:
+async def check_single_token(service: str, token) -> bool:
     rs = resource_servers[service]
     if cred_store.is_valid(token):
        return rs.verify(token)
 
-async def check_all_token(token: str =  Depends(oauth2_scheme))  -> bool:
+async def check_all_token(token)  -> bool:
     if cred_store.is_valid(token):
-        import pytest; pytest.set_trace()
         valid = [rs.id for rs in resource_servers.values() if rs.verify(token)]
-    return valid == list(resource_servers.keys())
-        
-@router.get("/{service}/check/")
-async def check_token(service: str, token: str =  Depends(oauth2_scheme)) -> bool:
-    if service != 'all':
-        return await check_single_token(service, token)
+        return valid == list(resource_servers.keys())
     else:
-        return await check_all_token(token)
+        return False
+   
 
-@router.get("/{service}/logout/")
-async def logout(service: str, token: str =  Depends(oauth2_scheme)):
+@router.get("/{service}/check", response_model=auth_models.TokenValidity)
+async def check_token(service: str, token: str) -> bool:
+    if service != 'all':
+        val = await check_single_token(service, token)
+    else:
+        val = await check_all_token(token)
+    return {'token': token, 'valid': val}
+
+
+@router.get("/all/logout")
+async def logout_all(token: str =  Depends(oauth2_scheme)):
+    for serv in resource_servers.keys():
+        await logout_single(serv, token)
+    return  {"logged out": token}
+
+@router.get("/{service}/logout")
+async def logout_single(service: str, token: str =  Depends(oauth2_scheme)):
+    print(service)
     rs = resource_servers[service]
     rs.logout(token)
-    cred_store.remove(token, [service])
+    cred_store.remove(token, service)
     return  {"logged out": token}
+
 
 def get_user(service: str):
     def _inner(token: str) -> openbis_service.OpenbisUser |  ldap.LdapUser:
@@ -115,9 +138,8 @@ def get_openbis(token: str =  Depends(oauth2_scheme)) -> Openbis:
         return rs.openbis
 
 
-@router.get("/{service}/me/", response_model= Union[openbis_service.OpenbisUser,  ldap.LdapUser])
+@router.get("/{service}/me", response_model= Union[openbis_service.OpenbisUser,  ldap.LdapUser])
 async def read_users_me(service: str, current_user: auth_models.User = Depends(get_user), token: str = Depends(oauth2_scheme)):
-    import pytest; pytest.set_trace()
     return current_user(token)
 
 

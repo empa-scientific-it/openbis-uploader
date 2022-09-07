@@ -37,7 +37,7 @@ def login_data() -> Dict[str, str]:
 @pytest.fixture
 def token(client, login_data) -> Dict[Any, Any]:
     def _inner(service:str, user: str = "basi"):
-        response = client.post(f"/authorize/{service}/token/", data=login_data(service, user))
+        response = client.post(f"/authorize/{service}/token", data=login_data(service, user))
         tok = response.json()
         token = tok['access_token']
         headers = {"Authorization": f"Bearer {token}"}
@@ -47,7 +47,7 @@ def token(client, login_data) -> Dict[Any, Any]:
 @pytest.fixture
 def temp_files(client, token):
     app_settings = settings.get_settings()
-    response = client.get("/authorize/ldap/me/", headers=token("ldap"))
+    response = client.get("/authorize/ldap/me", headers=token("ldap"))
     groups = ldap.decompose_dn(response.json()['group'][0])[app_settings.ldap_group_attribute]
     ds = files.InstanceDataStore(app_settings.base_path, groups)
     cf = tf.NamedTemporaryFile(dir = ds.path)
@@ -55,16 +55,16 @@ def temp_files(client, token):
     cf.close()
  
 def test_auth_fail(client):
-    response = client.post("/authorize/ldap/token/")
+    response = client.post("/authorize/ldap/token")
     assert response.status_code == 422
 
 def test_ldap_auth_success(client, login_data):
-    response = client.post("/authorize/ldap/token/", data=login_data("ldap"))
+    response = client.post("/authorize/ldap/token", data=login_data("ldap"))
     tok = response.json()
     assert response.status_code == 200 
 
 def test_openbis_auth_success(client, login_data):
-    response = client.post("/authorize/openbis/token/", data=login_data("openbis"))
+    response = client.post("/authorize/openbis/token", data=login_data("openbis"))
     tok = response.json()
     assert response.status_code == 200
 
@@ -73,30 +73,30 @@ def test_multiple_auth(client, login_data):
     Check if the different user get different tokens
     """
     def get_user(un: str):
-        token_req = client.post("/authorize/openbis/token/", data=login_data("openbis", un))
+        token_req = client.post("/authorize/openbis/token", data=login_data("openbis", un))
         token = token_req.json()['access_token']
         headers = {"Authorization": f"Bearer {token}"}
-        response = client.get("/authorize/openbis/me/", headers=headers)
+        response = client.get("/authorize/openbis/me", headers=headers)
         return response
     resps = [get_user(u) for u in ['baan', 'basi']]
     assert (resps[0].json()['username'] != resps[1].json())
 
 
 def test_invalidation(client:TestClient, login_data):
-    token_req = client.post("/authorize/openbis/token/", data=login_data("openbis"))
+    token_req = client.post("/authorize/openbis/token", data=login_data("openbis"))
     token = token_req.json()['access_token']
     headers = {"Authorization": f"Bearer {token}"}
-    invalid = client.get("/authorize/openbis/logout/", headers=headers)
-    should_fail = client.get("/authorize/openbis/me/", headers=headers)
+    invalid = client.get("/authorize/openbis/logout", headers=headers)
+    should_fail = client.get("/authorize/openbis/me", headers=headers)
     assert should_fail.status_code == 401
 
    
 
 def test_token(client:TestClient, login_data):
-    token_req = client.post("/authorize/openbis/token/", data=login_data("openbis"))
+    token_req = client.post("/authorize/openbis/token", data=login_data("openbis"))
     token = token_req.json()['access_token']
     headers = {"Authorization": f"Bearer {token}"}
-    response = client.get("/authorize/openbis/me/", headers=headers)
+    response = client.get("/authorize/openbis/me", headers=headers)
     assert (response.status_code == 200) & (response.json()['username'] == login_data("openbis")['username'])
 
 
@@ -107,7 +107,7 @@ def test_get_ldap_groups(client, token):
 
 
 def test_login_all(client: TestClient, login_data):
-    token_req = client.post("/authorize/all/token/", data=login_data("all"))
+    token_req = client.post("/authorize/all/token", data=login_data("all"))
     token_resp = token_req.json()['access_token']
     tok = {"Authorization": f"Bearer {token_resp}"}
     resp_ob = client.get("/authorize/openbis/me", headers=tok)
@@ -116,14 +116,17 @@ def test_login_all(client: TestClient, login_data):
 
 
 def test_token_validation(client: TestClient, login_data):
-    token_req = client.post("/authorize/all/token/", data=login_data("all"))
+    token_req = client.post("/authorize/all/token", data=login_data("all"))
     token_resp = token_req.json()['access_token']
     tok = {"Authorization": f"Bearer {token_resp}"}
     resp_ob = client.get("/authorize/all/check", headers=tok)
-    assert (resp_ob.status_code == 200) &   (resp_ob.json())
+    assert (resp_ob.status_code == 200) &   (resp_ob.json()['valid'])
 
 
-
+def test_token_invalidation(client: TestClient, login_data):
+    tok = f"Bearer gibberish"
+    resp_ob = client.get("/authorize/all/check", params={'token':tok})
+    assert (resp_ob.status_code == 200) &  (not resp_ob.json()['valid'])
 
 def test_list_files(client, token, temp_files):
     resp = client.get("/datasets/", headers=token("ldap"))
@@ -137,9 +140,9 @@ def test_post_file(client, token):
         resp = client.post(f"/datasets/", headers=token("ldap"), files={'file': (temp_file.name, temp_file, "application/octet-stream")})
         fn = pl.Path(temp_file.name)
     find_query = client.get(f"/datasets/find/?pattern={fn.name}", headers=token("ldap"))
-    pytest.set_trace()
 
 
 def test_openbis(client, token):
     resp = client.get(f"/openbis/tree/", headers=token("openbis", "basi"))
     pytest.set_trace()
+

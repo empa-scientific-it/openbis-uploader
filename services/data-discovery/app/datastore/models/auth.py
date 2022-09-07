@@ -16,7 +16,9 @@ class TokenData(BaseModel):
     iat: int | None = dt.datetime.now().timestamp()
 
 
-
+class TokenValidity(BaseModel):
+    token: str
+    valid: bool
 
 @dataclass
 class User:

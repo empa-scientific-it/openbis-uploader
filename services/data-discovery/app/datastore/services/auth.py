@@ -124,7 +124,8 @@ class CredentialsStore:
         """
         Removes the token by moving it to the list of invalidated tokens
         """
-        self.items.pop((key, audience))
+        if (key, audience) in self.items.keys():
+            self.items.pop((key, audience))
         self.invalidated.add(key)
 
 
@@ -182,11 +183,13 @@ class ResourceServerLdap(ResourceServer):
         pass
 
     def verify(self, token: str) -> bool:
-        token_data = self.context.decode_access_token(token, self.id)
-        with self.principal_connection as pc:
-            user = ldap.get_user_info(pc, token_data.sub)
-        return user.username == token_data.sub and self.id in token_data.aud
-    
+        try:
+            token_data = self.context.decode_access_token(token, self.id)
+            with self.principal_connection as pc:
+                user = ldap.get_user_info(pc, token_data.sub)
+            return user.username == token_data.sub and self.id in token_data.aud
+        except Exception as e:
+            return False
 
     
     def get_user_info(self, token: str) -> ldap.LdapUser:
@@ -204,7 +207,7 @@ class ResourceServerOpenBis(ResourceServer):
     openbis: Openbis
 
     def login(self, username: str, password: str) -> Tuple[str, Credentials]:
-        openbis_token = self.openbis.login(username, password)
+        openbis_token = self.openbis.login(username=username, password=password, save_token=False)
         token = self.context.create_access_token(auth_models.TokenData(aud= [self.id], sub=username))
         cd = Credentials(sub=username, aud=[self.id], secret=openbis_token)
         return token, cd
@@ -214,8 +217,11 @@ class ResourceServerOpenBis(ResourceServer):
             self.openbis.logout()
 
     def verify(self, token: str) -> bool:
-        token_data = self.context.decode_access_token(token, self.id)
-        return  self.id in token_data.aud and self.openbis.is_token_valid()
+        try:
+            token_data = self.context.decode_access_token(token, self.id)
+            return  self.id in token_data.aud and self.openbis.is_session_active()
+        except Exception as e:
+            return False
 
     def get_user_info(self, token: str) -> Optional[openbis_service.OpenbisUser]:
         if self.verify(token):

@@ -14,7 +14,7 @@ class OpenbisUser(auth_models.User):
 
 def get_openbis() -> pybis.Openbis:
     config = settings.get_settings()
-    return pybis.Openbis(config.openbis_server, verify_certificates=False, use_cache=False)
+    return pybis.Openbis(config.openbis_server, verify_certificates=False, use_cache=False, token=False)
 
 def get_user_instance() -> pybis.Openbis:
     """
@@ -27,7 +27,6 @@ def openbis_login(username: str, password: str) -> str:
     password and username.
     """
     config = settings.get_settings()
-    breakpoint()
     try:
         pb = get_openbis()
         token = pb.login(username, password)
