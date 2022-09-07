@@ -21,13 +21,15 @@ from abc import ABC
 from ast import Pass
 from dataclasses import field
 from re import S
-from typing import Callable, Any, Dict, List, Literal, Type, TypeVar, Union
+from typing import Callable, Any, Dict, List, Literal, Type, TypeVar, Union, Generator
 import pybis
 from pybis.pybis import PropertyType, Space, SampleType, ExperimentType, Project, OpenBisObject, Experiment, Things, Sample, DataSetType, DataSet, Person
 from pydantic.dataclasses import dataclass
 from pydantic import BaseModel, Field, validator, root_validator
 import pathlib as pl
 from .validators import children_validator, TreeObject
+
+import functools
 
 class OpenbisGenericObject(ABC, BaseModel, TreeObject):
     """
@@ -127,6 +129,37 @@ class OpenbisTreeObject(OpenbisGenericObject):
         obj = self.get_ob_object(ob)
         if obj.registrator != 'system':
             obj.delete(f"Deleted by {self.__class__}")
+
+
+class OpenbisObjectTree(OpenbisTreeObject):
+    """
+    Class implementing the tree of samples 
+    in openbis (/SPACE/PROJECT/COLLECTION/Experiment)
+    """
+
+    code: str = None
+    children = List['OpenbisObjectTree']
+
+    @classmethod
+    def create(ob: pybis.Openbis) -> 'OpenbisObjectTree':
+        #Get the objects
+        init_struct = OpenbisTreeObject('/')
+        objs:Things = ob.get_objects(attrs=['space', 'experiment', 'project', 'code', 'type'])
+        #Extract the identifiers
+        paths:List[str] = objs.df.identifier.to_list()
+        #Iterate over paths
+        for p in paths:
+            components = p.split('/')
+            functools.reduce(lambda tree, element:  tree['children'].append({'id': 'element'}) ,components, {'children': ''} )
+
+
+def tree_builder(path: List[str], current: str) -> Generator:
+    if path:
+        for p in path:
+            children = yield from tree_builder(p, current)
+            yield {'id': current, 'children': [children]}
+    else:
+        yield {'id': current, 'children': []}
 
 
 class OpenbisSample(OpenbisTreeObject):
@@ -406,7 +439,6 @@ class OpenbisInstance(OpenbisGenericObject):
         #Reflect role assignments
         roles = [OpenbisRoleAssignment(techid=ui).reflect(ob) for ui in ob.get_role_assignments().df.techId.astype(int)]
         return cls(object_types = object_types, collection_types = collection_types, properties = property_types, spaces=children, users=users, roles=roles)
-
 
     @root_validator(pre=False)
     def check_parent(cls, values):
