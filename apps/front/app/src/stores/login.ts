@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import OpenBis from "../services/OpenBis"
+import DropbBox from "../services/DropBox"
 
 
 
@@ -24,10 +24,11 @@ function deleteToken(token: sessionToken){
     localStorage.removeItem("token");
 }
 
-async function existingSession(): Promise<boolean>{
-    const token = getToken();
-    if (token){
-        return await OpenBis.checkToken(token.token);
+async function existingSession(token: sessionToken | void): Promise<boolean>{
+    if (token != undefined){
+        if ((token.token !== undefined)){
+            return await DropbBox.checkToken(token.token);
+        }
     }
     else{
         return false;
@@ -41,13 +42,17 @@ interface State {
     instance: string
 }
 
+
+
 // Store for user information
 export const useUser = defineStore('login', 
 {
     state:  (): State =>  {
-        const exists = (async () => await existingSession())();
+       
         const token = getToken();
-        if (exists && token){
+        //const exists = (async () => await existingSession(token))();
+        const exists = false;
+        if (exists && token != undefined){
             return {
                 user: token.user,
                 sessionToken: token.token,
@@ -67,7 +72,7 @@ export const useUser = defineStore('login',
     actions: {
         async  login(user:string, password:string): Promise<boolean> {
             try{
-                const token = await OpenBis.login(user, password);
+                const token = await DropbBox.login(user, password);
                 this.user = user;
                 this.sessionToken = token;
                 this.loggedIn = true;
@@ -75,17 +80,19 @@ export const useUser = defineStore('login',
                 return true;
             }
             catch(err){
-                alert(err);
+                console.log(err);
+                return false;
             }
             
         },
         async logout(): Promise<boolean>{
             try{
-                const done = await OpenBis.logout(this.sessionToken);
+                const done = await DropbBox.logout(this.sessionToken);
                 if(done){
                     this.user = '';
                     this.sessionToken = '';
                     this.loggedIn = false;
+                    deleteToken(this.sessionToken);
                     return true
                 }else{
                     return false
@@ -94,6 +101,9 @@ export const useUser = defineStore('login',
                 alert(e);
             }
             
+        },
+        getToken(): string {
+            if (this.loggedIn) {return this.sessionToken}
         }
     }
 })

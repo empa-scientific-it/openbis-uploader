@@ -25,7 +25,8 @@ const router = createRouter({
 // if the user is not logged
 router.beforeEach((to, from) => {
   const store = useUser();
-  if ((to.matched.some((record) => record.meta.requiresAuth)) && !store.loggedIn && to.name != "login"){
+  console.log(store.loggedIn)
+  if (((to.matched.some((record) => record.meta.requiresAuth)) && !store.loggedIn) && to.name != "login"){
       return {name: "login"}
   }
 });

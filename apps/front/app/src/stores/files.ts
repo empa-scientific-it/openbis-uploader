@@ -1,16 +1,12 @@
 import { defineStore } from 'pinia'
+import DropBox from '../services/DropBox'
+import {bearerHeaderAuth} from '../helpers/auth'
+import {FileInfo} from '../models/Files'
 
-interface FileInfo {
-    name: String,
-    path: String,
-    modified: Date,
-    created: Date,
-    size: Number
-}
+
 
 interface State {
-    fileList: FileInfo[],
-    uploadedFiles: FileInfo[]
+    fileList: FileInfo[]
 }
 
 export const useFiles = defineStore(
@@ -20,13 +16,13 @@ export const useFiles = defineStore(
         {
             return {
             fileList: [],
-            uploadedFiles: [],
         }
     },
     actions:
     {
         async getFileList(){
-            
+            const files = await DropBox.getFiles(bearerHeaderAuth(), '*');
+            this.fileList = files.files;
         }
     }
 })

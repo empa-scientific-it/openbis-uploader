@@ -14,16 +14,18 @@ export default defineConfig({
         host: true,
         port: 5173,
         proxy: {
-        '/openbis' : {
+        '/openbis/' : {
             ws: true,
             changeOrigin: true,
             secure: false,
-            target: "https://openbis:443/openbis/openbis/"},
+            target: "http://openbis:443/openbis/openbis/"},
         '/data-discovery' : {
             ws: true,
             changeOrigin: true,
             secure: false,
-            target: "https://data-discovery:80/"}
+            target: "http://data-discovery:80/",
+            rewrite: (path) =>  path.replace(/^\/data-discovery/, "")
         }
     }
+}
 });

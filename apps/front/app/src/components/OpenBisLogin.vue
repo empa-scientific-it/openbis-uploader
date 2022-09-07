@@ -1,6 +1,6 @@
 <template>
-  <div class="login">
-        <form novalidate @click.stop.prevent="onSubmit">
+  <div class="login" @submit.prevent="onSubmit">
+        <form novalidate>
             <h3>Sign in to OpenBIS instance</h3>
             <div class="row">
                 <label for="user">Username</label>
@@ -11,7 +11,7 @@
                 <input type="password" v-model="password"  id="password"/>
             </div>
             <div class="row">
-              <button type="submit" class="btn btn-dark btn-lg btn-block">Sign In</button>
+              <button type="submit" class="btn btn-dark btn-lg btn-block" @click="onSubmit">Sign In</button>
             </div>
         </form>
   </div>
@@ -31,10 +31,10 @@
   const router = useRouter();
   
   async function onSubmit(ev: Event){
-    if(!store.loggedIn){
-        await store.login(user.value, password.value);
+    const success = await store.login(user.value, password.value);
+    if(success){
+      router.push({'name':"eln"});
     }
-    router.push({name:"eln"});
   }
 </script>
 
