@@ -73,6 +73,16 @@ class InstanceDataStore:
         """
         return [f for f in self.path.iterdir() if get_modification_delay(f) < last_changed]
 
+    def get_file(self, name: str) -> List[pl.Path]:
+        """
+        Finds the file with the exact name if this exists
+        """
+        files = [f for f in self.path.iterdir() if f.name == name]
+        if len(files) == 0:
+            raise FileNotFoundError(f"Cannot find the file with path {self.path / name}")
+        else:
+            return files[0]
+
     # @classmethod
     # def create(cls, base: pl.Path | str, instance: str) -> "InstanceDataStore":
     #     """

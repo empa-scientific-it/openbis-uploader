@@ -5,7 +5,7 @@ from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from datastore.utils import files, settings
 from datastore.models import datasets
 from datastore.services.ldap import auth, ldap, session
-
+from pybis import Openbis
 import argparse as ap
 import pathlib as pl
 import aiofiles
@@ -13,6 +13,8 @@ import aiofiles
 import os
 from datastore.services.ldap import session
 from datastore.routers.login import get_user, oauth2_scheme, cred_store
+
+from datastore.routers.openbis import  get_openbis
 
 router = APIRouter(prefix="/datasets")
 
@@ -93,4 +95,11 @@ async def delete_file(instance: str, name: str) -> None:
     except FileNotFoundError as e:
         return {"message": f"File {os_file} does not exist"}
 
-    
+@router.get("/transfer")
+async def transfer_file(source: str, inst: files.InstanceDataStore = Depends(get_user_instance), ob: Openbis = Depends(get_openbis)):
+    """
+    Find all datasets in instance`
+    :param user_info: user information
+    """
+    file = inst.get_file(source)
+    return {"files": file}

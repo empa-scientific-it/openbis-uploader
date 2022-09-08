@@ -10,5 +10,5 @@ router = APIRouter(prefix="/openbis")
 
 @router.get("/tree", response_model=views.TreeElement)
 async def get_tree(ob: Openbis = Depends(get_openbis)):
-    return views.build_sample_tree(ob)
+    return views.build_sample_tree_from_list(ob)
     
