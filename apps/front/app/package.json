@@ -15,6 +15,7 @@
   },
   "devDependencies": {
     "@vitejs/plugin-vue": "latest",
+    "bootstrap-icons": "^1.9.1",
     "eslint": "latest",
     "eslint-plugin-prettier": "latest",
     "eslint-plugin-vue": "latest",

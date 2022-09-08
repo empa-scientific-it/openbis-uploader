@@ -23,6 +23,9 @@ export const useFiles = defineStore(
         async getFileList(){
             const files = await DropBox.getFiles(bearerHeaderAuth(), '*');
             this.fileList = files.files;
+        },
+        async transfer(sourceId: string, destination: string){
+            await DropBox.transferFile(bearerHeaderAuth(), sourceId, destination)
         }
     }
 })

@@ -1,8 +1,8 @@
 <template>
     <div>    
     Connected as {{user}} 
-    <button @click='logout'>Logout</button>
     </div>
+    <button @click='logout'>Logout</button>
 </template>
 
 <script setup lang="ts">
@@ -12,7 +12,7 @@
     const auth = useUser();
     const user = auth.user;
     const router = useRouter();
-    
+
     async function logout(ev: Event){
       console.log("LOgging out")
       await auth.logout();  

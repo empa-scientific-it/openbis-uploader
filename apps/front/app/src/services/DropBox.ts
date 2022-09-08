@@ -75,5 +75,16 @@ export default{
             const error = new Error(response.statusText);
             Promise.reject(error);  
         }
+    },
+    async transferFile(headers: HeadersInit, fileId: string, targetId: string): Promise<object>{
+        const req =  new Request(`${apiPath}/datasets/transfer?source=${encodeURIComponent(fileId)}`, {method: 'GET', headers: headers});
+        const response = await fetch(req);
+        const body = await response.json();
+        if (response.ok){
+            return body
+        }else{
+            const error = new Error(response.statusText);
+            Promise.reject(error);  
+        }
     }
 }
