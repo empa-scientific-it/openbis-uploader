@@ -6,7 +6,8 @@ import {FileInfo} from '../models/Files'
 
 
 interface State {
-    fileList: FileInfo[]
+    fileList: FileInfo[],
+    selected: string | void
 }
 
 export const useFiles = defineStore(
@@ -16,6 +17,7 @@ export const useFiles = defineStore(
         {
             return {
             fileList: [],
+            selected:  null
         }
     },
     actions:
@@ -24,8 +26,16 @@ export const useFiles = defineStore(
             const files = await DropBox.getFiles(bearerHeaderAuth(), '*');
             this.fileList = files.files;
         },
+        contains(id: string){
+            const names = this.fileList.map(el => el.name);
+            return names.includes(id);
+        },
         async transfer(sourceId: string, destination: string){
-            await DropBox.transferFile(bearerHeaderAuth(), sourceId, destination)
+            if(this.contains(sourceId)){
+                await DropBox.transferFile(bearerHeaderAuth(), sourceId, destination);
+            }else{
+                throw new Error(`File not found: ${sourceId}`);
+            }
         }
     }
 })

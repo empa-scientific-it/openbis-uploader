@@ -4,7 +4,8 @@ import { TreeNode } from '../models/Tree'
 import { PropType } from 'vue';
 
 const props = defineProps({
-    model: Object as PropType<TreeNode>
+    model: Object as PropType<TreeNode>,
+    handleDrop: Function
 })
 
 const isOpen = ref(false)
@@ -27,21 +28,36 @@ function toggle() {
   isOpen.value = !isOpen.value
 }
 
+const emit = defineEmits<{(event: 'dropped', target: string): void }>();
 
+function handleDrop(event){
+  console.log(event.dataTransfer.getData('id'))
+  console.log(`Handler Currently in ${props.model.id}`);
+  emit('dropped', props.model.id);
+}
+// This just reemits the event all over the tree
+function handleDropped(level){
+  console.log(`Dropped Handler Currently in ${props.model.id} ${level}`);
+  emit('dropped', level)
+}
 
 </script>
 
 
 <template>
-  <li>
-    <div @click="toggle">
-        <i :class="itemIcon"></i>
-        
-        <span v-if="isFolder"><i :class="isOpen ? 'bi bi-dash-circle' : 'bi bi-plus-circle'"></i></span>
-        {{ model.id }}
-    </div>
-    <ul v-show="isOpen" v-if="isFolder">
-      <TreeItem class="item" v-for="model in model.children" :model="model">
+  <li class="tree" @dragover.prevent @dragenter.prevent>
+        <div @click="toggle"  @drop="handleDrop" @dragover.prevent @dragenter.prevent> 
+          <div >
+            inner
+            <i :class="itemIcon"></i>
+            <span v-if="isFolder">
+              <i :class="isOpen ? 'bi bi-dash-circle' : 'bi bi-plus-circle'"></i>
+            </span>
+            {{ model.id }}
+          </div>
+        </div>
+    <ul v-show="isOpen" v-if="isFolder" >
+      <TreeItem class="item" v-for="model in model.children" :model="model" @dropped="handleDropped">
       </TreeItem>
     </ul>
   </li>
@@ -51,7 +67,5 @@ function toggle() {
 ul {
   list-style-type: none;
 }
-ul li {
-        margin-left:50px;
-}
+
 </style>

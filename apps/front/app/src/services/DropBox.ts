@@ -22,7 +22,7 @@ export default{
             }
         } else {
             const error = new Error(response.statusText);
-            Promise.reject(error);
+            throw(error);
         }
 
     },
@@ -37,19 +37,21 @@ export default{
             return true;
         }else{
             const error = new Error(response.statusText);
-            Promise.reject(error);  
+            throw(error);  
         }
     },
 
     async checkToken(token: string): Promise<boolean>{
-        const req =  new Request(`${apiPath}/authorize/all/check?token=${encodeURIComponent(token)}`, {method: 'GET'});
+        const base = `${apiPath}/authorize/all/check?token`
+        const params = new  URLSearchParams({token: token})
+        const req =  new Request( base + params.toString(), {method: 'GET'});
         const response = await fetch(req);
         const body = await response.json();
         if (response.ok){
             return body
         }else{
             const error = new Error(response.statusText);
-            Promise.reject(error);  
+            throw(error);  
         }
     },
 
@@ -61,10 +63,22 @@ export default{
             return body
         }else{
             const error = new Error(response.statusText);
-            Promise.reject(error);  
+            throw(error);  
         }
     },
 
+    async getDatasetTypes(headers: HeadersInit): Promise<string[]>{
+        const req =  new Request(`${apiPath}/openbis/dataset_types`, {method: 'GET', headers: headers});
+        const response = await fetch(req);
+        const body = await response.json();
+        if (response.ok){
+            return body
+        }else{
+            const error = new Error(response.statusText);
+            throw(error);  
+        }
+},
+    
     async getFiles(headers: HeadersInit, pattern: string): Promise<Object> {
         const req =  new Request(`${apiPath}/datasets/`, {method: 'GET', headers: headers});
         const response = await fetch(req);
@@ -73,18 +87,23 @@ export default{
             return body
         }else{
             const error = new Error(response.statusText);
-            Promise.reject(error);  
+            throw(error);  
         }
     },
     async transferFile(headers: HeadersInit, fileId: string, targetId: string): Promise<object>{
-        const req =  new Request(`${apiPath}/datasets/transfer?source=${encodeURIComponent(fileId)}`, {method: 'GET', headers: headers});
+        const req_string = `${apiPath}/datasets/transfer?` 
+        const param_string = new URLSearchParams({
+            source: fileId,
+            target: targetId,
+        })
+        const req =  new Request(req_string + param_string.toString(), {method: 'GET', headers: headers});
         const response = await fetch(req);
         const body = await response.json();
         if (response.ok){
             return body
         }else{
             const error = new Error(response.statusText);
-            Promise.reject(error);  
+            throw(error);  
         }
     }
 }
