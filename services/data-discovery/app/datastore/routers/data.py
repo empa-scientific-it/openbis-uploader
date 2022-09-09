@@ -1,6 +1,7 @@
+from urllib.error import HTTPError
 from fastapi import APIRouter
 
-from fastapi import FastAPI, File, UploadFile, Depends
+from fastapi import FastAPI, File, UploadFile, Depends, HTTPException
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from datastore.utils import files, settings
 from datastore.models import datasets
@@ -10,11 +11,14 @@ import argparse as ap
 import pathlib as pl
 import aiofiles
 
-import os
-from datastore.services.ldap import session
-from datastore.routers.login import get_user, oauth2_scheme, cred_store
 
+from datastore.services.ldap import session
+from datastore.services import openbis as openbis_service
+from datastore.routers.login import get_user, oauth2_scheme, cred_store
 from datastore.routers.openbis import  get_openbis
+
+
+from instance_creator.views import OpenbisHierarcy
 
 router = APIRouter(prefix="/datasets")
 
@@ -71,7 +75,6 @@ async def upload_file(file: UploadFile, inst: files.InstanceDataStore = Depends(
     Upload a new file to the instance
     """
     out_path = inst.path / pl.Path(file.filename).name
-    import pytest; pytest.set_trace()
     try:
         contents = await file.read()
         async with aiofiles.open(out_path, 'wb') as f:
@@ -96,10 +99,22 @@ async def delete_file(instance: str, name: str) -> None:
         return {"message": f"File {os_file} does not exist"}
 
 @router.get("/transfer")
-async def transfer_file(source: str, inst: files.InstanceDataStore = Depends(get_user_instance), ob: Openbis = Depends(get_openbis)):
+async def transfer_file(source: str, dataset_type: str, object: str | None, collection: str | None = None, inst: files.InstanceDataStore = Depends(get_user_instance), ob: Openbis = Depends(get_openbis)):
     """
-    Find all datasets in instance`
-    :param user_info: user information
+    Transfers a file from the datastore
+    to the openbis server
     """
     file = inst.get_file(source)
-    return {"files": file}
+    match object, collection:
+        case None, str(y):
+            loader = lambda files, type: ob.new_dataset(experiment = collection, type = type, file = files)
+        case str(x), None:
+            loader = lambda files, type: ob.new_dataset(code = collection, type = file, file = files)
+        case str(x), str(y):
+            raise HTTPException(401, detail='Either the sample or the collection must be specified, not both')
+    try:
+        nd = loader(str(file), dataset_type)
+        nd.save()
+    except ValueError:
+        raise HTTPException(401)
+    return {"permid": nd.code}

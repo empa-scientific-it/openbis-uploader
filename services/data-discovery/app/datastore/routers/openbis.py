@@ -12,3 +12,6 @@ router = APIRouter(prefix="/openbis")
 async def get_tree(ob: Openbis = Depends(get_openbis)):
     return views.build_sample_tree_from_list(ob)
     
+@router.get('/dataset_types')
+async def get_dataset_types(ob: Openbis = Depends(get_openbis)):
+    return ob.get_dataset_types().df.permId.to_list()

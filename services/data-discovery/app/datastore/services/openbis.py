@@ -7,6 +7,8 @@ from fastapi import HTTPException, status
 from typing import Tuple
 from datastore.models import auth as auth_models
 
+from instance_creator import views as openbis_views
+
 @dataclass
 class OpenbisUser(auth_models.User):
     space: str | None
@@ -39,4 +41,5 @@ def openbis_login(username: str, password: str) -> str:
         raise credentials_exception
     finally:
         pb.logout()
+
 
