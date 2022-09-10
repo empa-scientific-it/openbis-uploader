@@ -2,32 +2,50 @@
     import { declareVariable } from '@babel/types';
     import { PropType } from 'vue';
     import {FileInfo} from '../models/Files'
+    import {OpenbisObjectTypes} from '../models/Tree'
     import { useUser } from '../stores/login';
     import { useOpenbis } from '../stores/openbis';
     import { useFiles } from '../stores/files';
     import {onMounted, ref} from 'vue';
     import TreeItem from './TreeItem.vue'
     import FileList from './FileList.vue'
+    import {storeToRefs} from 'pinia';
+    import {DropBox} from '../services/DropBox'
 
-    const auth = useUser();
-    const user = auth.user;
     const openbis = useOpenbis();
     const files = useFiles();
+    const {tree, current, datasetTypes} = storeToRefs(openbis);
+    const {fileList, selected} = storeToRefs(files);
+    
+    const selectedType = ref('');
+    const transferError = ref(null);
     const props = defineProps({
-        show: Boolean
+        show: Boolean,
     })
 
-    const availableTypes = ref(['']);
     onMounted(
         async () => {
             const dsTypes= await openbis.getDatasetTypes()
-            console.log(dsTypes);
-            availableTypes.value = dsTypes;
         }
     )
-    // const emit = defineEmits<{
-    //         (e: 'close', type: string, parser: string): void
-    //         (e: 'cancel', value: Boolean): void}>()
+    const emit = defineEmits<{
+            (e: 'save'): void
+            (e: 'cancel', value: Boolean): void}>()
+
+    async function handleSave(){
+        debugger
+        console.log(selected.value, current.value, selectedType.value)
+        if(selected?.value){
+            try{
+                await files.transfer(selected.value.name, current.value.id, selectedType.value, (current.value.type as OpenbisObjectTypes))
+                emit('save')
+            }
+            catch(e:any){
+                debugger
+                transferError.value = e;
+            }
+        }
+    }
 </script>
 
 
@@ -37,13 +55,17 @@
         <div class="modal-wrapper">
             <div class="modal-container">
             <div class="modal-header">
-                <slot name="header">Select dataset properties</slot>
+              
+                <slot name="header">  Save {{selected.name}} to {{current.id}}</slot>
             </div>
 
             <div class="modal-body">
+                <slot name="error" v-if="transferError !== null">
+                    {{transferError}}
+                </slot>
                 <slot name="body">
-                   <select>
-                    <option v-for="item in availableTypes" :value="item" :key="item">
+                   <select v-model="selectedType">
+                    <option v-for="item in datasetTypes" :value="item" :key="item">
                         {{item}}
                     </option>
                    </select> 
@@ -55,7 +77,7 @@
                 default footer
                 <button
                     class="modal-default-button"
-                    @click="$emit('close')"
+                    @click="handleSave"
                 >OK</button>
                 <button
                     class="modal-default-button"

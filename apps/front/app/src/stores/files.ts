@@ -1,13 +1,13 @@
 import { defineStore } from 'pinia'
-import DropBox from '../services/DropBox'
+import * as DropBox from '../services/DropBox'
 import {bearerHeaderAuth} from '../helpers/auth'
 import {FileInfo} from '../models/Files'
-
+import {OpenbisObjectTypes} from '../models/Tree'
 
 
 interface State {
     fileList: FileInfo[],
-    selected: string | void
+    selected: FileInfo | void
 }
 
 export const useFiles = defineStore(
@@ -30,9 +30,9 @@ export const useFiles = defineStore(
             const names = this.fileList.map(el => el.name);
             return names.includes(id);
         },
-        async transfer(sourceId: string, destination: string){
+        async transfer(sourceId: string, destination: string, dataSetType: string, level: OpenbisObjectTypes){
             if(this.contains(sourceId)){
-                await DropBox.transferFile(bearerHeaderAuth(), sourceId, destination);
+                await DropBox.transferFile(bearerHeaderAuth(), sourceId, destination, dataSetType, level);
             }else{
                 throw new Error(`File not found: ${sourceId}`);
             }

@@ -52,19 +52,22 @@
 
     function handleFileMoved(source){   
       console.log(`Moved file ${source}`)
-      selected.value = source
+      console.log(selected.value)
     }
 
     async function handleFileDropped(dest){
-      console.log(`Dropped ${selected.value} on ${dest}`)
+      console.log(`Dropped ${selected.value} on ${current.value}`)
       if(selected.value){
-        try{
-          await files.transfer(selected.value, dest)
-        } catch(e) {
-          console.log(e);
-          alert(e)
-        }
+        showPopup.value = true;
       }
+    }
+
+    async function handleTransfer(){
+      console.log(`${selected.value} to ${current.value}`)
+      showPopup.value = !showPopup.value;
+    }
+    function handleCancel(ev){
+      showPopup.value = !showPopup.value;
     }
 
 </script>
@@ -84,10 +87,9 @@
     </div>
     <div class="main">
       <h2>Files on Datastore</h2>
-      <FileList :files="fileList" @moved="handleFileMoved"></FileList>
+      <FileList @moved="handleFileMoved"></FileList>
     </div>
-
-  <UploadPrompt :show="showPopup"></UploadPrompt>
+  <UploadPrompt :show="showPopup" @cancel="handleCancel" @save="handleTransfer" :file="selected" :dest="current"></UploadPrompt>
 </div>
 </template>
 

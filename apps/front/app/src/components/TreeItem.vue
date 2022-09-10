@@ -1,19 +1,26 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
-import { TreeNode } from '../models/Tree'
-import { PropType } from 'vue';
+  import { ref, computed } from 'vue'
+  import { TreeNode } from '../models/Tree'
+  import { PropType } from 'vue';
+  import { useOpenbis } from '../stores/openbis';
+  import { storeToRefs } from 'pinia';
+  import { propsToAttrMap } from '@vue/shared';
 
-const props = defineProps({
-    model: Object as PropType<TreeNode>,
-    handleDrop: Function
-})
+  const props = defineProps({
+      model: Object as PropType<TreeNode>,
+      handleDrop: Function
+  })
 
-const isOpen = ref(false)
-const isFolder = computed(() => {
+  const openbis = useOpenbis();
+  const {tree, current, datasetTypes} = storeToRefs(openbis);
+
+
+  const isOpen = ref(false)
+  const isFolder = computed(() => {
   return props.model.children && props.model.children.length
-})
+  })
 
-const itemIcon = computed(() => {
+  const itemIcon = computed(() => {
     switch(props.model.type){
         case "SPACE": return "bi bi-folder"
         case "INSTANCE": return "bi bi-folder"
@@ -24,29 +31,34 @@ const itemIcon = computed(() => {
     }
     );
 
-function toggle() {
-  isOpen.value = !isOpen.value
-}
+  function toggle() {
+    isOpen.value = !isOpen.value
+    current.value = props.model;
+    console.log(current.value);
+  }
 
-const emit = defineEmits<{(event: 'dropped', target: string): void }>();
+  const emit = defineEmits<{(event: 'dropped', target: string): void }>();
 
-function handleDrop(event){
-  console.log(event.dataTransfer.getData('id'))
-  console.log(`Handler Currently in ${props.model.id}`);
-  emit('dropped', props.model.id);
-}
-// This just reemits the event all over the tree
-function handleDropped(level){
+  function handleDrop(event){
+    console.log(event.dataTransfer.getData('id'))
+    console.log(`Handler Currently in ${props.model.id}`);
+    current.value = props.model;
+    emit('dropped', props.model.id);
+  }
+  // This just reemits the event all over the tree
+  function handleDropped(level){
   console.log(`Dropped Handler Currently in ${props.model.id} ${level}`);
   emit('dropped', level)
-}
+  }
 
 </script>
 
 
+
+
 <template>
   <li class="tree" @dragover.prevent @dragenter.prevent>
-        <div @click="toggle"  @drop="handleDrop" @dragover.prevent @dragenter.prevent> 
+        <div class="node" @click="toggle"  @drop="handleDrop" @dragover.prevent @dragenter.prevent> 
           <div>
             <i :class="itemIcon"></i>
             <span v-if="isFolder">
@@ -56,13 +68,19 @@ function handleDropped(level){
           </div>
         </div>
     <ul v-show="isOpen" v-if="isFolder" >
-      <TreeItem class="item" v-for="model in model.children" :model="model" @dropped="handleDropped">
+      <TreeItem class="tree" v-for="model in model.children" :model="model" @dropped="handleDropped">
       </TreeItem>
     </ul>
   </li>
 </template>
 
 <style>
+
+.tree node {
+  padding-left: 16px;
+  margin: 6px 0;
+}
+
 ul {
   list-style-type: none;
 }

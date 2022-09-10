@@ -10,10 +10,10 @@
                 <label for="password">Password</label>
                 <input type="password" v-model="password"  id="password"/>
             </div>
-            <div class="row">
-              <button type="submit" class="btn btn-dark btn-lg btn-block" @click="onSubmit">Sign In</button>
-            </div>
         </form>
+        <div class="row">
+              <button type="submit" class="btn btn-dark btn-lg btn-block" @click="onSubmit">Sign In</button>
+        </div>
   </div>
 </template>
 

@@ -1,21 +1,22 @@
 <script setup lang="ts">
     import { declareVariable } from '@babel/types';
-import { EMPTY_OBJ } from '@vue/shared';
+    import { EMPTY_OBJ } from '@vue/shared';
     import { PropType, Ref } from 'vue';
     import {FileInfo} from '../models/Files'
-    const props = defineProps({
-        files: [Object] as PropType<FileInfo[]>
-    })
+    import FileList from './FileList.vue'
+    import { storeToRefs } from 'pinia';
+    import { useFiles } from '../stores/files';
 
+   
+    const files = useFiles();
+    const {fileList, selected} = storeToRefs(files);
 
     const emit = defineEmits<{(event: 'moved', id: string)}>()
 
-    // function startDrag(event: DragEvent, id: string){
-    //     event.dataTransfer.dropEffect = 'move'      
-    //     event.dataTransfer.effectAllowed = 'move'      
-    //     event.dataTransfer.setData('id', id)
-    //     emit('moved', id)
-    // }
+    function handleFileMoved(item){
+        selected.value = item;
+        emit('moved', item.name);
+    }
 
 </script>
 
@@ -31,8 +32,8 @@ import { EMPTY_OBJ } from '@vue/shared';
             </tr>
         </thead>
         <tbody>
-            <tr v-for="item in files" :files="files" class="item" draggable=true  @dragover.prevent  @dragenter.prevent  @dragend="$emit('moved', item.name)" @dragstart="$emit('moved', item.name)" :id="item.name">
-                <td class="bi bi-file-earmark" :id="item.name"></td>
+            <tr v-for="item in fileList" :files="files" class="item" draggable=true  @dragover.prevent  @dragenter.prevent  @dragend="handleFileMoved(item)" @dragstart="handleFileMoved(item)" :id="item.name">
+                <td class="bi bi-file-earmark" :id="item.name" @click="selected.value=item"></td>
                 <td>{{ item.name }}</td>
                 <td>{{ item.created }}</td>
             </tr>

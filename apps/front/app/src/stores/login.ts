@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import DropbBox from "../services/DropBox"
+import * as DropBox from "../services/DropBox"
 
 
 
@@ -27,7 +27,7 @@ function deleteToken(token: sessionToken){
 async function existingSession(token: sessionToken | void): Promise<boolean>{
     if (token != undefined){
         if ((token.token !== undefined)){
-            return await DropbBox.checkToken(token.token);
+            return await DropBox.checkToken(token.token);
         }
     }
     else{
@@ -72,7 +72,7 @@ export const useUser = defineStore('login',
     actions: {
         async  login(user:string, password:string): Promise<boolean> {
             try{
-                const token = await DropbBox.login(user, password);
+                const token = await DropBox.login(user, password);
                 this.user = user;
                 this.sessionToken = token;
                 this.loggedIn = true;
@@ -87,7 +87,7 @@ export const useUser = defineStore('login',
         },
         async logout(): Promise<boolean>{
             try{
-                const done = await DropbBox.logout(this.sessionToken);
+                const done = await DropBox.logout(this.sessionToken);
                 if(done){
                     this.user = '';
                     this.sessionToken = '';

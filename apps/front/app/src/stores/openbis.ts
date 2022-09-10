@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import DropbBox from "../services/DropBox"
+import * as DropBox from "../services/DropBox"
 import {TreeNode} from "../models/Tree"
 import {bearerHeaderAuth} from '../helpers/auth'
 
@@ -13,19 +13,20 @@ interface OpenbisTreeState{
 export const useOpenbis = defineStore('openbis', 
 {
     state:  () => {
+        const ct = {id: '/', type: 'INSTANCE', children: []}
         return {
-            tree: {id: '/', type: 'INSTANCE', children: []},
-            current: null,
+            tree: ct,
+            current: ct,
             datasetTypes: []
         }},
     actions:
     {
         async  updateTree(){
-            const tree = await DropbBox.getTree(bearerHeaderAuth());
+            const tree = await DropBox.getTree(bearerHeaderAuth());
             this.tree = tree;
         },
         async getDatasetTypes(): Promise<string[]> {
-            const ds = await DropbBox.getDatasetTypes(bearerHeaderAuth());
+            const ds = await DropBox.getDatasetTypes(bearerHeaderAuth());
             this.datasetTypes = ds;
             return ds
         },
