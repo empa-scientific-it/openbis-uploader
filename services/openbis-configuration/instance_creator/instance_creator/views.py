@@ -27,6 +27,7 @@ class TreeElement(BaseModel):
     type: OpenbisHierarcy | None = None
     attributes: Dict[str, Any] | None = None
     children: List['TreeElement'] | List[None] = fields.Field([])
+    openbis_type: str | None = None
 
     def children_ids(self) -> List[str]:
         return [el.id for el in self.children] 
@@ -54,6 +55,14 @@ class TreeElement(BaseModel):
                     return els[0]
         return inner_search(self, id)
 
+
+class TreeElementObject(TreeElement):
+    """
+    Class derived from tree element
+    but which additionally stores the collection 
+    this object is attaches
+    """
+    collection: str
 
 @dataclass
 class OpenbisSampleInfo:
@@ -128,7 +137,6 @@ def tree_builder(paths: List[OpenbisSampleInfo]) -> TreeElement:
 
 
 def build_sample_tree_from_list(ob: pybis.Openbis) -> TreeElement:
-    sample_info = get_samples_with_info(ob)
     base_tree = TreeElement(id='/', code='/', type=OpenbisHierarcy.INSTANCE)
     #Add spaces
     for space in ob.get_spaces().df.itertuples():
@@ -137,16 +145,17 @@ def build_sample_tree_from_list(ob: pybis.Openbis) -> TreeElement:
     for proj in ob.get_projects():
         base_tree.get(id=proj.space.code).push(TreeElement(id=proj.identifier, code=proj.code, permid=proj.permId, type=OpenbisHierarcy.PROJECT))
     #Add collections
-    for coll in ob.get_collections(attrs=['project', 'space', 'code']).df.itertuples():
-        base_tree.get(coll.space).get(coll.project).push(TreeElement(id=coll.identifier, code=coll.code, permid=coll.permId, type=OpenbisHierarcy.COLLECTION))
+    for coll in ob.get_collections(attrs=['project', 'space', 'code', 'type']).df.itertuples():
+        base_tree.get(coll.space).get(coll.project).push(TreeElement(id=coll.identifier, code=coll.code, permid=coll.permId, type=OpenbisHierarcy.COLLECTION, openbis_type=coll.type))
     #Add objects
-    for samp in ob.get_objects(attrs=['project', 'space', 'code', 'experiment']).df.itertuples():
+    for samp in ob.get_objects(attrs=['project', 'space', 'code', 'experiment', 'type']).df.itertuples():
         proj = base_tree.find(samp.project)
         if proj:
-            proj.push(TreeElement(id=samp.identifier, code=samp.code, permid=samp.permId, type=OpenbisHierarcy.OBJECT))
+            proj.push(TreeElementObject(id=samp.identifier, code=samp.code, permid=samp.permId, collection=samp.experiment, type=OpenbisHierarcy.OBJECT, openbis_type=samp.type))
     return base_tree
 
 def build_sample_tree(ob: pybis.Openbis) -> TreeElement:
     sample_info = get_samples_with_info(ob)
+
     return tree_builder(sample_info)
 
