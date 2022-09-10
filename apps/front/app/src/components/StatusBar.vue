@@ -1,8 +1,9 @@
 <template>
     <div>    
-    Connected as {{user}} 
-    </div>
+    User: {{user}} 
     <button @click='logout'>Logout</button>
+    </div>
+    
 </template>
 
 <script setup lang="ts">

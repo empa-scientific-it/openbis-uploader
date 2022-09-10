@@ -47,8 +47,7 @@ function handleDropped(level){
 <template>
   <li class="tree" @dragover.prevent @dragenter.prevent>
         <div @click="toggle"  @drop="handleDrop" @dragover.prevent @dragenter.prevent> 
-          <div >
-            inner
+          <div>
             <i :class="itemIcon"></i>
             <span v-if="isFolder">
               <i :class="isOpen ? 'bi bi-dash-circle' : 'bi bi-plus-circle'"></i>
@@ -67,5 +66,6 @@ function handleDropped(level){
 ul {
   list-style-type: none;
 }
+
 
 </style>

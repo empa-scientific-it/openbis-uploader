@@ -21,7 +21,8 @@ import { EMPTY_OBJ } from '@vue/shared';
 
 
 <template>
-    <table id="files" class="table table-striped table-bordered">
+    <div class="fixedhead">
+        <table id="files" class="table table-striped table-bordered">
         <thead>
             <tr>
                 <th></th>
@@ -37,9 +38,29 @@ import { EMPTY_OBJ } from '@vue/shared';
             </tr>
         </tbody>
     </table>
+    </div>
+
 </template>
 
 
 
+<style>
+     .fixedhead {
+        overflow-y:auto;
+        height: 20%;
+    }
+    .fixedhead thead tr th {
+      position: sticky;
+      top: 0;
+      fill: white;
+      background: white;
+    }
+    table {
+      border-collapse: collapse;        
+      width: 100%;
+      text-align: left;
+    }
 
+
+</style>
 

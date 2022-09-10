@@ -72,20 +72,21 @@
 
 <template>
 <div class="grid-container">
-    <div id="a" class="header">
+    <div id="a" class="header"><status-bar/></div>
+    <div class="title">
       <h1>OpenBIS Dataset Uploader</h1>
     </div>
     <div class="menu">
-      <h1>Openbis Tree</h1>
+      <h2>Openbis Tree</h2>
       <ul>
         <TreeItem class="item" :model="tree" @dropped="handleFileDropped"></TreeItem>
       </ul>
     </div>
     <div class="main">
-      <h1>Files on Datastore</h1>
+      <h2>Files on Datastore</h2>
       <FileList :files="fileList" @moved="handleFileMoved"></FileList>
     </div>
-  <div id="a" class="foot"><status-bar/></div>
+
   <UploadPrompt :show="showPopup"></UploadPrompt>
 </div>
 </template>
@@ -93,33 +94,47 @@
 
 <style>
 
+.main .tbody {
+        overflow-y:auto;
+        height: 50%;
+    }
+
+.menu ul  {
+        overflow-y:auto;
+        height: 50%;
+    }
+
+
 .item {
   cursor: pointer;
   line-height: 1.5;
 }
 
 
-.header { display: grid-item; grid-area: header; }
-.menu { display: grid-item; grid-area: menu; justify-items: left; }
-.main { display: grid-item; grid-area: main; }
-.right {display: grid-item; grid-area: right; }
-.foot { display: grid-item; grid-area: footer; }
-grid-item {
-  display: flex;            /* new */
-  align-items: left;      /* new */
-  justify-items: left;    /* new */
-}
 .grid-container {
   display: grid;
   grid-template-areas:
-    'header header header header header header'
-    'menu menu main main right right'
-    'footer footer footer footer footer footer';
-  gap: 10px;
+    'header header header'
+    'title title title' 
+    'menu main right '
+    'footer main right';
+  gap: 2%;
   background-color: #FFFF;
-  padding: 10px;
+  padding: 1%;
 }
 
+grid-item {
+  display: grid;            /* new */
+  align-items: left;      /* new */
+  justify-items: left;    /* new */
+  align-self: stretch;
+}
 
+.header { display: grid-item; grid-area: header; justify-content: start; }
+.title {display: grid-item; grid-area: title;}
+.menu { display: grid-item; grid-area: menu;}
+.main { display: grid-item; grid-area: main;}
+.right {display: grid-item; grid-area: right;}
+.foot { display: grid-item; grid-area: footer;}
 
 </style>
