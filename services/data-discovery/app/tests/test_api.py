@@ -1,5 +1,6 @@
 
 import pathlib as pl
+from platform import python_revision
 import tempfile as tf
 import sys
 from fastapi import FastAPI
@@ -8,11 +9,20 @@ from datastore.routers import login, data, openbis
 from datastore.utils import settings
 from datastore.utils import files
 from datastore.services.ldap import ldap
+from datastore.services.parsers.interfaces import OpenbisDatasetParser
 import os
-from typing import Dict, Any
+from typing import Callable, Dict, Any, Type, Generator
 import pytest
 
+from pybis import Openbis
+from pybis.openbis_object import Transaction
+from pybis.dataset import DataSet
+
+import inspect
+
 import tempfile as tf
+
+import textwrap
 
 @pytest.fixture
 def client() -> TestClient:
@@ -22,6 +32,26 @@ def client() -> TestClient:
     app.include_router(openbis.router)
     client = TestClient(app)
     return client
+
+
+def temp_settings(base_path: pl.Path):
+    class TempSettings(settings.DataStoreSettings):
+        class Config:
+            env_file = pl.Path(__file__) / pl.Path('.env')
+    return TempSettings
+
+@pytest.fixture
+def temp_client() -> Callable:
+    def _inner(path: pl.Path)  -> TestClient:
+        app = FastAPI()
+        app.include_router(login.router)
+        app.include_router(data.router)
+        app.include_router(openbis.router)
+        app.dependency_overrides[settings.get_settings] = temp_settings(path)
+        client = TestClient(app)
+        return client
+    return _inner
+
 
 @pytest.fixture
 def login_data() -> Dict[str, str]:
@@ -154,3 +184,46 @@ def test_transfer(client, token):
     params = {'source':fn.name, 'target': '/MEASUREMENTS/TEST/EXP1', 'dataset_type':'RAW_DATA'}
     transfer_query = client.get(f"/datasets/transfer", headers=token("all"), params=params)
     pytest.set_trace()
+
+@pytest.fixture
+def test_parser_class() -> Type[OpenbisDatasetParser]:
+    class TestParser(OpenbisDatasetParser):
+        def process(self, transaction: Transaction, ob: Openbis, dataset: DataSet, a: int, b:str, c:str = 'gala') -> Transaction:
+            ob.new_object('ICP-MS-MEASUREMENT', '/MEASUREMENTS/TEST/ICPMS_MEAS1', {'GAS_FLOW':1.2, 'SAMPLE_ID':a})
+            return transaction 
+    return TestParser 
+
+@pytest.fixture
+def test_parser_file() -> pl.Path:
+    return pl.Path(__file__).parent / pl.Path('test_parser.py') 
+
+@pytest.fixture
+def test_instance() -> files.InstanceDataStore:
+    with tf.TemporaryDirectory() as td:
+        yield files.InstanceDataStore(base = td, instance='test')
+    print("done")
+
+
+
+
+def test_register_parser(test_parser_class :Type[OpenbisDatasetParser] , test_instance: files.InstanceDataStore):
+    test_instance.register_parser('test', test_parser_class)
+    assert test_instance.parsers['test'] == test_parser_class
+
+def test_find_parsers(test_parser_file: pl.Path, test_instance: files.InstanceDataStore):
+    file_path = test_instance.parser_path / 'test.py'
+    with open(file_path, 'w+') as of, open(test_parser_file, 'r') as source:
+        of.writelines(source.readlines())
+    parsers = test_instance.find_parsers()
+    if parsers:
+        [test_instance.register_parser(name, parser) for name,parser in parsers.items()]
+        [parser()._generate_basemodel() for name, parser in test_instance.parsers.items()]
+    
+
+
+def test_run_parser(temp_client, login_data):
+    with tf.TemporaryDirectory() as td:
+        tc = temp_client(td)
+    response = tc.post("/authorize/openbis/token", data=login_data("all"))
+    tok = response.json()
+    pass

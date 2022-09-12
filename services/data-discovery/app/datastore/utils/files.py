@@ -2,10 +2,14 @@
 This module is used to manage datasets
 for a specific instance of the data uploader
 """
+from asyncore import file_dispatcher
+from dataclasses import field
+from functools import reduce
+import inspect
 import pathlib as pl
 from pydantic.dataclasses import dataclass
 from pydantic import BaseModel
-from typing import Iterable, List, Optional, Dict, Union
+from typing import Iterable, List, Optional, Dict, Union, TypeVar, Type
 import datetime as dt
 
 from re import Pattern
@@ -14,8 +18,17 @@ from venv import create
 from . import settings
 
 from ..services.ldap import ldap
+from ..services.parsers.interfaces import OpenbisDatasetParser
 
-import yaml
+
+import importlib
+import importlib.util
+
+import inspect
+
+import sys
+
+from collections import ChainMap
 
 def get_modification_delay(f: pl.Path) -> float:
     """
@@ -26,15 +39,41 @@ def get_modification_delay(f: pl.Path) -> float:
     """
     return (dt.datetime.now(dt.timezone.utc) - dt.datetime.fromtimestamp(f.stat().st_mtime, tz=dt.timezone.utc)).total_seconds() / 60
 
+
+T = TypeVar('T')
+def load_classes(loc: pl.Path, which: T) -> Dict[str, T] | None:
+    """
+    Load all classes that are a subclass of `which`
+    """
+    name = str(loc.stem)
+    module_spec = importlib.util.spec_from_file_location(name, str(loc))
+    module = None
+    if module_spec:
+        module = importlib.util.module_from_spec(module_spec)
+        sys.modules[name] = module
+    else:
+        raise FileNotFoundError("Cannot load classes in {loc}")
+    if module is not None and module_spec is not None:
+        if module_spec.loader is not None:
+            module_spec.loader.exec_module(module)
+            classes = {name: obj for name, obj in inspect.getmembers(module, predicate=inspect.isclass) if (issubclass(obj, which) and obj != which)}
+            return classes
+        else:
+            raise FileNotFoundError("Cannot load classes in {loc}")
+
+
 @dataclass
 class InstanceDataStore:
     """
     Class to represent the datastore
     for a specific instance. This is a directory in the path :obj:`path` that contains all the 
-    datasets to be upload / attached to a given openBis instance
+    datasets to be upload / attached to a given openBis instance.
+    The `parsers` attribute contains a Dictionary of :class:`OpenbisDatasetParser` subclasses that are registered
+    for this instance
     """
     path: pl.Path
     instance: str
+    parsers: Dict[str, Type[OpenbisDatasetParser]] = field(default_factory=lambda: dict())
 
     def __init__(self,  base: pl.Path | str, instance: str) -> None:
         match base:
@@ -44,7 +83,17 @@ class InstanceDataStore:
                 base_path = pt
         instance_path = (base_path / pl.Path(instance)).expanduser().resolve()
         self.path = instance_path
+        if not self.path.exists():
+            self.path.mkdir()
+        if not self.parser_path.exists():
+            self.parser_path.mkdir()
         self.instance = instance
+        self.parsers = dict() | p if (p:= self.find_parsers()) else dict()
+
+
+    @property
+    def parser_path(self) -> pl.Path:
+        return self.path / 'parsers'
 
     def resolve_path(self) -> pl.Path:
         """
@@ -81,26 +130,29 @@ class InstanceDataStore:
         if len(files) == 0:
             raise FileNotFoundError(f"Cannot find the file with path {self.path / name}")
         else:
-            return files[0]
+            return files
+    
+    def register_parser(self, name:str, new_parser: Type[OpenbisDatasetParser]):
+        """
+        Given a class, registers it as a  dataset parser (as long as it is a subclass of the :obj:`OpenbisDatasetParser` ABC)
+        """
+        if issubclass(new_parser, OpenbisDatasetParser):
+            self.parsers.update({name: new_parser})
+        else:
+            raise TypeError(f"Class {new_parser} is not  a subclass of {OpenbisDatasetParser}")
 
-    # @classmethod
-    # def create(cls, base: pl.Path | str, instance: str) -> "InstanceDataStore":
-    #     """
-    #     Class factory to create a new datastore instance given a base path. If the path already exists, just
-    #     returns the instance, if the path doesn't exists, the directory is created first.
-    #     """
-    #     match base:
-    #         case str(x):
-    #             base_path = pl.Path(x)
-    #         case pl.Path() as pt:
-    #             base_path = pt
-    #     instance_path = (base_path / pl.Path(instance)).expanduser().resolve()
-    #     #Check if exists
-    #     if instance_path.exists():
-    #         return cls(instance_path, instance) 
-    #     else:
-    #         instance_path.mkdir(parents=True, exist_ok=True)
-    #         return cls(instance_path, instance) 
+    def find_parsers(self) -> Dict[str, Type[OpenbisDatasetParser]] | None:
+        """
+        Find and load alll of the dataset parsers
+        """
+        py_files = self.parser_path.glob("*.py")
+        res = [f for f in [load_classes(file, OpenbisDatasetParser) for file in py_files] if f is not None]
+        if res:
+            classes_per_file = reduce(lambda x,y: x | y, res)
+            return classes_per_file
+            
+
+
 
 @dataclass
 class DataStore:

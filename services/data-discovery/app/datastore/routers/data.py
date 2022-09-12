@@ -11,12 +11,13 @@ import argparse as ap
 import pathlib as pl
 import aiofiles
 
+from typing import Dict, List
 
 from datastore.services.ldap import session
 from datastore.services import openbis as openbis_service
 from datastore.routers.login import get_user, oauth2_scheme, cred_store
 from datastore.routers.openbis import  get_openbis
-
+from datastore.services.parsers.interfaces import OpenbisDatasetParser, ParserParameters
 
 from instance_creator.views import OpenbisHierarcy
 
@@ -87,7 +88,7 @@ async def upload_file(file: UploadFile, inst: files.InstanceDataStore = Depends(
     return {"message": f"Successfuly uploaded {file.filename} to {out_path}"}
 
 @router.delete("/")
-async def delete_file(instance: str, name: str) -> None:
+async def delete_file(instance: str, name: str) -> Dict:
     """
     Delete a file by name
     """
@@ -97,6 +98,16 @@ async def delete_file(instance: str, name: str) -> None:
         os_file.unlink(missing_ok=False)
     except FileNotFoundError as e:
         return {"message": f"File {os_file} does not exist"}
+
+@router.get("/parsers")
+async def get_registered_dataset_parsers(inst: files.InstanceDataStore = Depends(get_user_instance)) -> List[Dict]:
+    """
+    Gets the list of all registered dataset parsers
+    """
+    if len(inst.parsers) > 0:
+        prs = [pr._generate_basemodel().schema_json() for pr in inst.parsers.values()]
+        breakpoint()
+
 
 @router.get("/transfer")
 async def transfer_file(source: str, dataset_type: str, object: str | None, collection: str | None = None, inst: files.InstanceDataStore = Depends(get_user_instance), ob: Openbis = Depends(get_openbis)):
