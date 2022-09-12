@@ -6,3 +6,4 @@ ldap3
 python-jose[cryptography]
 passlib
 pybis
+bcrypt
