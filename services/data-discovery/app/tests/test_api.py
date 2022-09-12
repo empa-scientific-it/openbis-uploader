@@ -146,3 +146,11 @@ def test_openbis(client, token):
     resp = client.get(f"/openbis/tree/", headers=token("openbis", "basi"))
     pytest.set_trace()
 
+def test_transfer(client, token):
+    with  tf.NamedTemporaryFile() as temp_file:
+        temp_file.write(os.urandom(1024))
+        resp = client.post(f"/datasets/", headers=token("ldap"), files={'file': (temp_file.name, temp_file, "application/octet-stream")})
+        fn = pl.Path(temp_file.name)
+    params = {'source':fn.name, 'target': '/MEASUREMENTS/TEST/EXP1', 'dataset_type':'RAW_DATA'}
+    transfer_query = client.get(f"/datasets/transfer", headers=token("all"), params=params)
+    pytest.set_trace()
