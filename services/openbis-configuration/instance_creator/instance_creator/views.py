@@ -60,9 +60,12 @@ class TreeElementObject(TreeElement):
     """
     Class derived from tree element
     but which additionally stores the collection 
-    this object is attaches
+    this object is attached as well as the relationship
+    of this object to others
     """
     collection: str
+    ancestors: List[str] | None = []
+    descendants: List[str] | None = []
 
 @dataclass
 class OpenbisSampleInfo:
@@ -148,10 +151,11 @@ def build_sample_tree_from_list(ob: pybis.Openbis) -> TreeElement:
     for coll in ob.get_collections(attrs=['project', 'space', 'code', 'type']).df.itertuples():
         base_tree.get(coll.space).get(coll.project).push(TreeElement(id=coll.identifier, code=coll.code, permid=coll.permId, type=OpenbisHierarcy.COLLECTION, openbis_type=coll.type))
     #Add objects
-    for samp in ob.get_objects(attrs=['project', 'space', 'code', 'experiment', 'type']).df.itertuples():
+    for samp in ob.get_objects(attrs=['project', 'space', 'code', 'experiment', 'type', "children", 'parents']).df.itertuples():
         proj = base_tree.find(samp.project)
         if proj:
-            proj.push(TreeElementObject(id=samp.identifier, code=samp.code, permid=samp.permId, collection=samp.experiment, type=OpenbisHierarcy.OBJECT, openbis_type=samp.type))
+            proj.push(TreeElementObject(id=samp.identifier, code=samp.code, permid=samp.permId, 
+            collection=samp.experiment, type=OpenbisHierarcy.OBJECT, openbis_type=samp.type, ancestors=samp.parents, descendants=samp.children))
     return base_tree
 
 def build_sample_tree(ob: pybis.Openbis) -> TreeElement:
