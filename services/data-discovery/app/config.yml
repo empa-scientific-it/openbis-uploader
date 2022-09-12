@@ -1,2 +1,6 @@
 base_path: '~/datastores'
-instances: [401, 503, 700]
+ldap_server: "localhost"
+ldap_port: 1389
+ldap_principal_name: "cn=admin,dc=empa,dc=ch"
+ldap_principal_password: "password"
+ldap_base: "dc=empa,dc=ch"
