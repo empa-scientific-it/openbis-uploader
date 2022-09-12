@@ -21,10 +21,11 @@
   })
 
   const itemIcon = computed(() => {
+    console.log(isOpen.value)
     switch(props.model.type){
-        case "SPACE": return "bi bi-folder"
-        case "INSTANCE": return "bi bi-folder"
-        case "PROJECT": return "bi bi-folder"
+        case "SPACE": return  (isOpen.value ? "bi bi-folder2-open" : 'bi bi-folder2')
+        case "INSTANCE": return (isOpen.value ? "bi bi-folder2-open" : 'bi bi-folder2')
+        case "PROJECT": return (isOpen.value ? "bi bi-folder2-open" : 'bi bi-folder2')
         case "COLLECTION": return "bi bi-table"
         case "OBJECT": return "bi bi-card-list"
     }
@@ -59,13 +60,8 @@
 <template>
   <li class="tree" @dragover.prevent @dragenter.prevent>
         <div class="node" @click="toggle"  @drop="handleDrop" @dragover.prevent @dragenter.prevent> 
-          <div>
-            <i :class="itemIcon"></i>
-            <span v-if="isFolder">
-              <i :class="isOpen ? 'bi bi-dash-circle' : 'bi bi-plus-circle'"></i>
-            </span>
-            {{ model.id }}
-          </div>
+            <span><i :class="itemIcon"></i></span>
+            <a>{{ model.code }}</a>
         </div>
     <ul v-show="isOpen" v-if="isFolder" >
       <TreeItem class="tree" v-for="model in model.children" :model="model" @dropped="handleDropped">
@@ -76,13 +72,21 @@
 
 <style>
 
-.tree node {
-  padding-left: 16px;
-  margin: 6px 0;
+.tree{
+  
+  text-align: left;
+
 }
+
+ul .tree {
+  padding-left: 0.1%;
+  margin: 0px 0;
+}
+
 
 ul {
   list-style-type: none;
+  list-style-position: outside;
 }
 
 

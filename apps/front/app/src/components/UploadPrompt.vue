@@ -6,7 +6,7 @@
     import { useUser } from '../stores/login';
     import { useOpenbis } from '../stores/openbis';
     import { useFiles } from '../stores/files';
-    import {onMounted, ref} from 'vue';
+    import {onMounted, ref, toRef} from 'vue';
     import TreeItem from './TreeItem.vue'
     import FileList from './FileList.vue'
     import {storeToRefs} from 'pinia';
@@ -28,23 +28,29 @@
             const dsTypes= await openbis.getDatasetTypes()
         }
     )
+
+    const thisShow = toRef(props, 'show')
+
     const emit = defineEmits<{
             (e: 'save'): void
             (e: 'cancel', value: Boolean): void}>()
 
     async function handleSave(){
-        debugger
-        console.log(selected.value, current.value, selectedType.value)
+        console.log("args", selected.value.name, current.value.code, selectedType.value, (current.value.type as OpenbisObjectTypes))
         if(selected?.value){
             try{
                 await files.transfer(selected.value.name, current.value.id, selectedType.value, (current.value.type as OpenbisObjectTypes))
                 emit('save')
             }
             catch(e:any){
-                debugger
                 transferError.value = e;
             }
         }
+    }
+
+    function handleTransferError(){
+        transferError.value = null;
+        thisShow.value = !thisShow.value; 
     }
 </script>
 
@@ -60,7 +66,7 @@
             </div>
 
             <div class="modal-body">
-                <slot name="error" v-if="transferError !== null">
+                <slot name="error" v-if="transferError !== null" >
                     {{transferError}}
                 </slot>
                 <slot name="body">

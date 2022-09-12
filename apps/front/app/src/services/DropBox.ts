@@ -92,31 +92,29 @@ export async function  getFiles(headers: HeadersInit, pattern: string): Promise<
     }
 }
 export async function  transferFile(headers: HeadersInit, fileId: string, targetId: string, datasetType: string, targetType: OpenbisObjectTypes): Promise<object>{
-    debugger
     const req_string = `${apiPath}/datasets/transfer?` 
-    let param_string = new URLSearchParams();
+    const param_string = new URLSearchParams();
     switch(targetType){
         case OpenbisObjectTypes.SPACE:
-            throw(new Error("Cannot assign dataset to spaces"));
+            console.log("SPACE")
+            throw new Error("Cannot assign dataset to spaces");
         case OpenbisObjectTypes.INSTANCE:
-                throw(new Error("Cannot assign dataset to instance"));
+            console.log("INSTANCE")
+            throw new Error("Cannot assign dataset to instance");
         case OpenbisObjectTypes.PROJECT:
-            throw(new Error("Cannot assign dataset to projects"));
+            throw new Error("Cannot assign dataset to projects");
         case OpenbisObjectTypes.OBJECT:
-            param_string = new URLSearchParams({
-                source: fileId,
-                object: targetId,
-            }) 
+            console.log("OBJECT")
+            param_string.append("object", targetId);
             break;
         case OpenbisObjectTypes.COLLECTION:
-            param_string = new URLSearchParams({
-                source: fileId,
-                collection: targetId,
-            })
+            param_string.append("collection", targetId)
+            console.log("COllection")
             break;
     }
-    console.log(param_string.toString())
     param_string.append('dataset_type', datasetType);
+    param_string.append('source', fileId);
+    console.log(param_string);
     const req =  new Request(req_string + param_string.toString(), {method: 'GET', headers: headers});
     const response = await fetch(req);
     const body = await response.json();

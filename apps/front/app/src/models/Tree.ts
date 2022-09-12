@@ -7,10 +7,10 @@ export interface TreeNode {
     children: TreeNode[] | void 
 }
 
-export enum OpenbisObjectTypes{
-    SPACE,
-    PROJECT,
-    COLLECTION,
-    OBJECT,
-    INSTANCE
+export const enum OpenbisObjectTypes{
+    SPACE = 'SPACE',
+    PROJECT = 'PROJECT',
+    COLLECTION = 'COLLECTION',
+    OBJECT = 'OBJECT',
+    INSTANCE = 'INSTANCE'
 }
