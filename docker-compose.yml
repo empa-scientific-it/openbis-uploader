@@ -6,8 +6,8 @@ services:
       dockerfile: ./data-discovery/Dockerfile
     volumes:
       - ./services/data-discovery/app:/app/
-      - ./shares/:/shares
-      - ./services/openbis-configuration/instance_creator:/instance_creator
+      - ~/datastores/:/shares/
+      - ./services/openbis-configuration/instance_creator:/instance_creator/
     hostname: data-discovery
     ports:
       - "8080:80"
@@ -52,10 +52,11 @@ services:
     build: ./services/openbis
     #image: openbis/debian-openbis:latest
     environment:
-      - SERVER_HOST_PORT=localhost:443
-      - CORE_PLUGINS=enabled-modules = dropbox-monitor, dataset-uploader, dataset-file-search, xls-import, openbis-sync, eln-lims, openbis-ng-ui, search-store, user-management-maintenance
+      - SERVER_HOST_PORT=localhost:8443
+      - CORE_PLUGINS=enabled-modules = dataset-uploader, dataset-file-search, xls-import, eln-lims, openbis-ng-ui, search-store, user-management-maintenance
     volumes:
       - ./services/openbis/service.properties:/home/openbis/openbis_state/as_etc/service.properties
+      - ./services/openbis/dss_service.properties:/home/openbis/openbis_state/ds_etc/service.properties
       - ./services/openbis/groups.json:/home/openbis/openbis_state/as_etc/groups.json
       - ./builds/openbis/:/home/openbis/openbis_state/
     ports:
@@ -64,7 +65,7 @@ services:
     depends_on:
       - ldap
     healthcheck:
-      test: ["CMD", "curl", "localhost:443"]
+      test: ["CMD", "curl", "openbis:443"]
       interval: 1m30s
       timeout: 30s
       retries: 5
