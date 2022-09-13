@@ -137,8 +137,8 @@ class OpenbisObjectTree(OpenbisTreeObject):
     in openbis (/SPACE/PROJECT/COLLECTION/Experiment)
     """
 
-    code: str = None
-    children = List['OpenbisObjectTree']
+    code: str | None = None
+    children: List['OpenbisObjectTree'] = None
 
     @classmethod
     def create(ob: pybis.Openbis) -> 'OpenbisObjectTree':
