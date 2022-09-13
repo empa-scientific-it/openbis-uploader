@@ -66,7 +66,7 @@ class OpenbisDatasetParser(ABC):
         Process Function:
         {self.process.__doc__}
         """
-        pydantic_model = create_model(model_name, **model, __base__= p1)
+        pydantic_model = create_model(model_name, **model)
         return pydantic_model
 
 Parent = NewType('Parser', OpenbisDatasetParser)
@@ -77,5 +77,4 @@ def process(obj: Parent, tran: Transaction):
     the parser
     """
     bm = obj._generate_basemodel()
-    breakpoint()
 

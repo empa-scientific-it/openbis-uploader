@@ -27,9 +27,10 @@ from typing import Dict, Union
 
 from pybis import Openbis
 
+
+
+    
 router = APIRouter(prefix='/authorize')
-
-
 
 def get_credential_context() -> auth_service.CredentialsContext:
     #Initialise credentials store
@@ -38,10 +39,7 @@ def get_credential_context() -> auth_service.CredentialsContext:
     return cred_context
 
 
-
-items = dict()
-invalidated = set()
-def get_credential_store(cred_context: auth_service.CredentialsContext = Depends(get_credential_context), redis: Redis = Depends(get_redis)) -> auth_service.CredentialsStore:
+def get_credential_store(cred_context: auth_service.CredentialsContext = Depends(get_credential_context), redis: Redis = Depends(get_redis)) -> auth_service.AbstractCredentialStore:
     cs = auth_service.RedisCredentialsStore.create(redis, cred_context)
     return cs
     
@@ -109,7 +107,6 @@ async def check_all_token(token: str, cred_store:auth_service.CredentialsStore, 
 
 @router.get("/{service}/check", response_model=auth_models.TokenValidity)
 async def check_token(service: str, token: str, cred_store:auth_service.CredentialsStore = Depends(get_credential_store), resource_servers: Dict[str, auth_service.ResourceServer] = Depends(get_resource_serves)) -> Dict:
-    import pytest; pytest.set_trace()
     if service != 'all':
         val = await check_single_token(service, token, cred_store, resource_servers)
     else:
@@ -125,7 +122,6 @@ async def logout_all(token: str =  Depends(oauth2_scheme),  resource_servers: Di
 
 @router.get("/{service}/logout")
 async def logout_single(service: str, token: str =  Depends(oauth2_scheme), cred_store:auth_service.CredentialsStore = Depends(get_credential_store), resource_servers: Dict[str, auth_service.ResourceServer] = Depends(get_resource_serves)):
-    print(service)
     rs = resource_servers[service]
     rs.logout(token)
     cred_store.remove(token, service)

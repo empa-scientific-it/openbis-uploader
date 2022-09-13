@@ -28,13 +28,13 @@ class DataStoreSettings(BaseSettings):
     ldap_principal_password: str
     ldap_base: str
     redis_host: str 
-    redis_port: int
+    redis_port: int = 6379
     redis_db: int = 0
     redis_password: str
     openbis_server: str
     jws_secret_key: str
     jws_algorithm:str = "HS256"
-    jws_access_token_expire_minutes = 30
+    jws_access_token_expire_minutes: int = 30
     ldap_authentication: Literal['ANONYMOUS', 'SIMPLE', 'SASL', 'NTLM'] | None = 'SIMPLE'
     instances: List[str] | None = None 
     credentials_storage_key: str = None 

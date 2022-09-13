@@ -9,11 +9,17 @@ from datastore.models import auth as auth_models
 
 from instance_creator import views as openbis_views
 
+from functools import cache
+
+
 @dataclass
 class OpenbisUser(auth_models.User):
     space: str | None
     permid: str | None 
 
+
+#TODO use a better method to initialise only once
+@cache
 def get_openbis() -> pybis.Openbis:
     config = settings.get_settings()
     return pybis.Openbis(config.openbis_server, verify_certificates=False, use_cache=False, token=False)

@@ -1,7 +1,7 @@
 from urllib.error import HTTPError
 from fastapi import APIRouter
 
-from fastapi import FastAPI, File, UploadFile, Depends, HTTPException
+from fastapi import FastAPI, File, UploadFile, Depends, HTTPException, Body
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from datastore.utils import files, settings
 from datastore.models import datasets
@@ -19,8 +19,10 @@ from datastore.services import auth as auth_service
 from datastore.routers.login import get_user, oauth2_scheme, get_credential_context, get_resource_serves, get_credential_store
 from datastore.routers.openbis import  get_openbis
 from datastore.services.parsers.interfaces import OpenbisDatasetParser, ParserParameters
-
+from datastore.services.parsers import icp_ms
 from instance_creator.views import OpenbisHierarcy
+from datastore.models.parser import ParserParameters
+
 
 router = APIRouter(prefix="/datasets")
 
@@ -38,7 +40,10 @@ async def get_user_instance(user: ldap.LdapUser = Depends(get_ldap_user)) -> fil
     """
     set = settings.get_settings()
     group = ldap.decompose_dn(user.group[0])[set.ldap_group_attribute]
-    return files.InstanceDataStore(set.base_path, group)
+    ds = files.InstanceDataStore(set.base_path, group)
+    #Attach parser
+    ds.register_parser('icp_ms', icp_ms.ICPMsParser)
+    return ds
 
 
 @router.get("/find")
@@ -111,14 +116,27 @@ async def get_registered_dataset_parsers(inst: files.InstanceDataStore = Depends
     else:
         raise HTTPException(204)
 
+@router.get("/parser_info", response_model=Dict)
+async def get_parser_parameters(parser: str, inst: files.InstanceDataStore = Depends(get_user_instance)) -> Dict:
+    """
+    Gets the schema for the parameters for the choosen parser
+    """
+    if len(inst.parsers) > 0:
+        parser_model = inst.parsers[parser]()._generate_basemodel()
+        return parser_model.schema()
+    else:
+        raise HTTPException(204)
 
-@router.get("/transfer")
-async def transfer_file(source: str, dataset_type: str, object: str | None, collection: str | None = None, inst: files.InstanceDataStore = Depends(get_user_instance), ob: Openbis = Depends(get_openbis)):
+
+@router.put("/transfer")
+async def transfer_file(params: ParserParameters, inst: files.InstanceDataStore = Depends(get_user_instance), ob: Openbis = Depends(get_openbis)):
     """
     Transfers a file from the datastore
     to the openbis server
     """
-    file = inst.get_file(source)
+    file = inst.get_file(params.source)
+    trans = ob.new_transaction()
+    object, collection = params.object, params.collection
     match object, collection:
         case None, str(y):
             loader = lambda files, type: ob.new_dataset(experiment = collection, type = type, file = files)
@@ -126,9 +144,11 @@ async def transfer_file(source: str, dataset_type: str, object: str | None, coll
             loader = lambda files, type: ob.new_dataset(code = collection, type = file, file = files)
         case str(x), str(y):
             raise HTTPException(401, detail='Either the sample or the collection must be specified, not both')
+    current_parser = inst.parsers[params.parser]()
     try:
-        nd = loader(str(file), dataset_type)
-        nd.save()
+        nd = loader(str(file[0]), params.dataset_type)
+        trans.add(nd)
+        current_parser.process(ob, trans, nd, **params.function_parameters)
     except ValueError:
         raise HTTPException(401)
     return {"permid": nd.code}

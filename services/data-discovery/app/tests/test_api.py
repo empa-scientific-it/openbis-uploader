@@ -183,9 +183,19 @@ def test_transfer(client, token):
         temp_file.write(os.urandom(1024))
         resp = client.post(f"/datasets/", headers=token("ldap"), files={'file': (temp_file.name, temp_file, "application/octet-stream")})
         fn = pl.Path(temp_file.name)
-    params = {'source':fn.name, 'target': '/MEASUREMENTS/TEST/EXP1', 'dataset_type':'RAW_DATA'}
-    transfer_query = client.get(f"/datasets/transfer", headers=token("all"), params=params)
+    body = {'source':fn.name, 'collection': '/MEASUREMENTS/TEST/EXP1', 'parser':'icp_ms', 'dataset_type':'RAW_DATA', 'function_parameters': {'a':1}}
+    transfer_query = client.put(f"/datasets/transfer", headers=token("all"), json=body)
+    import pytest; pytest.set_trace()
+
+def test_parser_parameters(client, token):
+    params = {'parser': 'icp_ms'}
+    resp = client.get(f"/datasets/parser_info?", headers=token("all", "basi"), params=params)
     pytest.set_trace()
+
+def test_icp_ms_parser(client, token):
+    body = {'source':"ICP-MS RAW.zip", 'collection': '/MEASUREMENTS/TEST/EXP1', 'parser':'icp_ms', 'dataset_type':'RAW_DATA', 'function_parameters': {'a':1}}
+    transfer_query = client.put(f"/datasets/transfer", headers=token("all"), json=body)
+    import pytest; pytest.set_trace()
 
 @pytest.fixture
 def test_parser_class() -> Type[OpenbisDatasetParser]:
