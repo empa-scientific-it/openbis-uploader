@@ -77,6 +77,7 @@ def token(client, login_data) -> Dict[Any, Any]:
 def temp_files(client, token):
     app_settings = settings.get_settings()
     response = client.get("/authorize/ldap/me", headers=token("ldap"))
+    import pytest; pytest.set_trace()
     groups = ldap.decompose_dn(response.json()['group'][0])[app_settings.ldap_group_attribute]
     ds = files.InstanceDataStore(app_settings.base_path, groups)
     cf = tf.NamedTemporaryFile(dir = ds.path)
@@ -148,7 +149,9 @@ def test_token_validation(client: TestClient, login_data):
     token_req = client.post("/authorize/all/token", data=login_data("all"))
     token_resp = token_req.json()['access_token']
     tok = {"Authorization": f"Bearer {token_resp}"}
-    resp_ob = client.get("/authorize/all/check", headers=tok)
+    params = {'token': token_resp}
+    resp_ob = client.get("/authorize/all/check", headers=tok, params=params)
+    pytest.set_trace()
     assert (resp_ob.status_code == 200) &   (resp_ob.json()['valid'])
 
 

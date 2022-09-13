@@ -27,6 +27,10 @@ class DataStoreSettings(BaseSettings):
     ldap_principal_name: str
     ldap_principal_password: str
     ldap_base: str
+    redis_host: str 
+    redis_port: int
+    redis_db: int = 0
+    redis_password: str
     openbis_server: str
     jws_secret_key: str
     jws_algorithm:str = "HS256"

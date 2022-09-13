@@ -15,7 +15,8 @@ from typing import Dict, List
 
 from datastore.services.ldap import session
 from datastore.services import openbis as openbis_service
-from datastore.routers.login import get_user, oauth2_scheme, cred_store
+from datastore.services import auth as auth_service
+from datastore.routers.login import get_user, oauth2_scheme, get_credential_context, get_resource_serves, get_credential_store
 from datastore.routers.openbis import  get_openbis
 from datastore.services.parsers.interfaces import OpenbisDatasetParser, ParserParameters
 
@@ -23,12 +24,12 @@ from instance_creator.views import OpenbisHierarcy
 
 router = APIRouter(prefix="/datasets")
 
-async def get_ldap_user(token: str = Depends(oauth2_scheme)) -> ldap.LdapUser:
+async def get_ldap_user(token: str = Depends(oauth2_scheme), store: auth_service.CredentialsStore = Depends(get_credential_store), resource_server: Dict[str, auth_service.ResourceServer] = Depends(get_resource_serves)) -> ldap.LdapUser:
     """
     Given a token (as a dependence),
     return a LdapUser object containing the user information
     """
-    return get_user("ldap")(token)
+    return get_user("ldap", store, resource_server)(token)
 
 async def get_user_instance(user: ldap.LdapUser = Depends(get_ldap_user)) -> files.InstanceDataStore:
     """
@@ -100,13 +101,15 @@ async def delete_file(instance: str, name: str) -> Dict:
         return {"message": f"File {os_file} does not exist"}
 
 @router.get("/parsers")
-async def get_registered_dataset_parsers(inst: files.InstanceDataStore = Depends(get_user_instance)) -> List[Dict]:
+async def get_registered_dataset_parsers(inst: files.InstanceDataStore = Depends(get_user_instance)) -> List[str]:
     """
     Gets the list of all registered dataset parsers
     """
     if len(inst.parsers) > 0:
-        prs = [pr._generate_basemodel().schema_json() for pr in inst.parsers.values()]
-        breakpoint()
+        prs = [pr for pr in inst.parsers.keys()]
+        return prs
+    else:
+        raise HTTPException(204)
 
 
 @router.get("/transfer")

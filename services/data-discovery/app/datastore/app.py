@@ -20,6 +20,7 @@ def create_app():
     """
     Factory function to create a new fastapi app
     """
+    
     #Create settings
     app = FastAPI()
     app.include_router(login.router)

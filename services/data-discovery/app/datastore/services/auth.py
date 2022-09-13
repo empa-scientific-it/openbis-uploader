@@ -3,6 +3,7 @@ from dataclasses import dataclass, asdict
 import dataclasses
 from multiprocessing.util import abstract_sockets_supported
 from platform import python_revision
+from venv import create
 from wsgiref import validate
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm, OAuth2
@@ -23,16 +24,17 @@ from abc import ABC, abstractmethod
 from pybis import Openbis, person
 import pybis
 
+from redis import Redis
 
+from pydantic import fields
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
 
-@dataclass
-class Credentials:
+class Credentials(auth_models.BaseModel):
     sub: str
-    secret: str = dataclasses.field(repr=False)
-    aud: str
+    secret: str  = fields.Field(repr=False)
+    aud: str | List[str]
 
 
 @dataclass
@@ -67,18 +69,31 @@ class CredentialsContext:
             raise credentials_exception
 
 @dataclass
-class CredentialsStore:
-    """
-    A in-memory credential store
-    """
+class AbstractCredentialStore(ABC):
     context: CredentialsContext
-    items: Dict[Tuple[str, str], Credentials] = dataclasses.field(default_factory=lambda: {})
-    invalidated: Set[str] = dataclasses.field(default_factory=lambda: set())
-
-
-    def is_valid(self, key: str) -> bool:
-        return key not in self.invalidated
     
+
+    @abstractmethod
+    def store(self, key: str, audience: str, cred: Credentials) -> None:
+        pass
+    
+    @abstractmethod
+    def retreive(self, key: str, audience: str) -> Credentials:
+        pass
+
+    @abstractmethod
+    def remove(self, key: str, audience: str) -> None:
+        pass
+
+    @abstractmethod
+    def is_invalidated(self, key: str) -> bool:
+        pass
+
+    @classmethod
+    @abstractmethod
+    def create(cls, *args, **kwargs) -> 'AbstractCredentialStore':
+        pass
+
     def decode_all(self, key: str, audiences: List[str]) -> List[str]:
         """
         Given a token and a list of audiences,
@@ -92,8 +107,65 @@ class CredentialsStore:
                 return None
         return [aud  for aud in audiences if handle(key, aud)]
 
+@dataclass
+class RedisCredentialsStore(AbstractCredentialStore):
+    redis: Redis
+
+    @classmethod
+    def create(cls, r: Redis, context: CredentialsContext):
+        return cls(context = context, redis=r)
+    
+    def store_key(self, key: str, audience:str, extra:str|None=None):
+        k = f"{key}:{audience}"
+        if extra:
+            fk = f"{k}:{extra}"
+        else:
+            fk = k
+        return fk
+    
+
+    def is_invalidated(self, key: str) -> bool:
+        val = self.redis.get(self.store_key(key,'invalidated'))
+        if val:
+            return True
+        else: 
+            return False
+        
+    def invalidate(self, key: str):
+        self.redis.set(self.store_key(key,'invalidated'), True)
+    
+    def remove(self, key: str, audience: str):
+        self.redis.delete(self.store_key(key,audience))
+        self.invalidate(key)
+
     def store(self, key: str, audience: str, cred: Credentials) -> None:
-        if self.is_valid(key):
+        self.redis.set(self.store_key(key, audience), cred.json())
+    
+    def retreive(self, key: str, audience: str) -> Credentials:
+        if not self.is_invalidated(key):
+            valid = self.decode_all(key, audience)
+            return self.redis.get(self.store_key(key, valid))
+
+@dataclass
+class CredentialsStore(AbstractCredentialStore):
+    """
+    A in-memory / redis credential store
+    """
+    context: CredentialsContext
+    items: Dict[Tuple[str, str], Credentials] = dataclasses.field(default_factory=lambda: {})
+    invalidated: Set[str] = dataclasses.field(default_factory=lambda: set())
+
+
+    @classmethod
+    def create(cls, context: CredentialsContext, items: Dict[Tuple[str, str], Credentials], invalidated: Set[str]):
+        return cls(context, items, invalidated)
+
+    def is_invalidated(self, key: str) -> bool:
+        return key not in self.invalidated
+    
+
+    def store(self, key: str, audience: str, cred: Credentials) -> None:
+        if not self.is_invalidated(key):
             try:
                 valid = self.decode_all(key, audience)
                 for v in valid:
@@ -106,7 +178,7 @@ class CredentialsStore:
             raise JWTError("This token has been invalidated")
 
     def retreive(self, key: str, audience: str) -> Credentials:
-        if self.is_valid(key):
+        if not self.is_invalidated(key):
             try:
                 valid = self.decode_all(key, audience)
                 if audience in valid:
