@@ -1,9 +1,7 @@
 
 from fastapi import FastAPI, File, UploadFile, Depends
-from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
-from datastore.utils import files, settings
-from datastore.models import datasets
-from datastore.services.ldap import auth, ldap, session
+from datastore.routers import data, login, openbis
+from datastore.utils import settings
 
 import argparse as ap
 import pathlib as pl
@@ -18,19 +16,13 @@ To configure the app, edit `.env` in the main directory
 """
 
 
-
-#Create settings
-app = FastAPI()
-settings = settings.get_settings()
-
-#Define the API methods
-
-
-@app.get("/")
-def root(username: str = Depends(auth.authenticate)):
+def create_app():
     """
-    Root page
+    Factory function to create a new fastapi app
     """
-    return {"message": f"Welcome {username}"}
-
-
+    #Create settings
+    app = FastAPI()
+    app.include_router(login.router)
+    app.include_router(data.router)
+    app.include_router(openbis.router)
+    return app

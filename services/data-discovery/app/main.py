@@ -1,11 +1,12 @@
 from fastapi import FastAPI, File, UploadFile, Depends
-from datastore.routers import data, login, openbis
-from datastore.utils import settings
+
 import uvicorn
 import argparse as ap
 from fastapi.logger import logger
 
 from datastore.routers import login
+
+from datastore.app import create_app
 
 def serve(app: FastAPI, host:str = '0.0.0.0', port: int = 8080):
     """Serve the API using uvicorn."""
@@ -23,10 +24,7 @@ args = parser.parse_args()
 
 
 #Create app
-app = FastAPI()
-app.include_router(login.router)
-app.include_router(data.router)
-app.include_router(openbis.router)
+app = create_app()
 
 
 

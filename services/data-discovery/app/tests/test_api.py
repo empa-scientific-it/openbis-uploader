@@ -24,12 +24,11 @@ import tempfile as tf
 
 import textwrap
 
+from datastore.app import create_app
+
 @pytest.fixture
 def client() -> TestClient:
-    app = FastAPI()
-    app.include_router(login.router)
-    app.include_router(data.router)
-    app.include_router(openbis.router)
+    app = create_app()
     client = TestClient(app)
     return client
 
