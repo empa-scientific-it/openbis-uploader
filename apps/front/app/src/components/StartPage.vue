@@ -75,7 +75,7 @@
 
 <template>
 <div class="grid-container">
-    <div id="a" class="header"><status-bar/></div>
+    <div id="status" class="header"><status-bar/></div>
     <div class="title">
       <h1>OpenBIS Dataset Uploader</h1>
     </div>

@@ -2,6 +2,7 @@ import { findDir } from "@vue/compiler-core";
 import JRPC from "./JRPC";
 import { bearer } from "../helpers/utils";
 import {OpenbisObjectTypes} from '../models/Tree';
+import { ParserParameters, ParserParameter } from '../models/ParserParameters'
 
 const apiPath = 'data-discovery';
 
@@ -80,6 +81,32 @@ export async function  getDatasetTypes(headers: HeadersInit): Promise<string[]>{
         }
 }
     
+export async function  getParsers(headers: HeadersInit): Promise<string[]>{
+    const req =  new Request(`${apiPath}/datasets/parsers`, {method: 'GET', headers: headers});
+    const response = await fetch(req);
+    const body = await response.json();
+    if (response.ok){
+        return body
+    }else{
+        const error = new Error(response.statusText);
+        throw(error);  
+    }
+}
+
+export async function  getParserParameters(headers: HeadersInit, parser: string): Promise<ParserParameters>{
+    const param_string = new URLSearchParams();
+    param_string.append('parser', parser);
+    const req =  new Request(`${apiPath}/datasets/parser_info?` + param_string.toString(), {method: 'GET', headers: headers});
+    const response = await fetch(req);
+    const body = await response.json();
+    if (response.ok){
+        return (body as ParserParameters);
+    }else{
+        const error = new Error(response.statusText);
+        throw(error);  
+    }
+}
+
 export async function  getFiles(headers: HeadersInit, pattern: string): Promise<Object> {
     const req =  new Request(`${apiPath}/datasets/`, {method: 'GET', headers: headers});
     const response = await fetch(req);
@@ -91,7 +118,7 @@ export async function  getFiles(headers: HeadersInit, pattern: string): Promise<
         throw(error);  
     }
 }
-export async function  transferFile(headers: HeadersInit, fileId: string, targetId: string, datasetType: string, targetType: OpenbisObjectTypes): Promise<object>{
+export async function  transferFile(headers: HeadersInit, fileId: string, targetId: string, datasetType: string, targetType: OpenbisObjectTypes, parser: string): Promise<object>{
     const req_string = `${apiPath}/datasets/transfer?` 
     const param_string = new URLSearchParams();
     switch(targetType){
@@ -114,6 +141,7 @@ export async function  transferFile(headers: HeadersInit, fileId: string, target
     }
     param_string.append('dataset_type', datasetType);
     param_string.append('source', fileId);
+    param_string.append('parser', parser);
     console.log(param_string);
     const req =  new Request(req_string + param_string.toString(), {method: 'GET', headers: headers});
     const response = await fetch(req);

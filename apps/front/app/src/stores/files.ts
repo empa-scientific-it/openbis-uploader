@@ -30,9 +30,9 @@ export const useFiles = defineStore(
             const names = this.fileList.map(el => el.name);
             return names.includes(id);
         },
-        async transfer(sourceId: string, destination: string, dataSetType: string, level: OpenbisObjectTypes){
+        async transfer(sourceId: string, destination: string, dataSetType: string, level: OpenbisObjectTypes, parser: string){
             if(this.contains(sourceId)){
-                await DropBox.transferFile(bearerHeaderAuth(), sourceId, destination, dataSetType, level);
+                await DropBox.transferFile(bearerHeaderAuth(), sourceId, destination, dataSetType, level, parser);
             }else{
                 throw new Error(`File not found: ${sourceId}`);
             }
