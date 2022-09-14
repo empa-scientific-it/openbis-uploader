@@ -135,20 +135,23 @@ async def transfer_file(params: ParserParameters, inst: files.InstanceDataStore 
     to the openbis server
     """
     file = inst.get_file(params.source)
-    trans = ob.new_transaction()
     object, collection = params.object, params.collection
     match object, collection:
         case None, str(y):
             loader = lambda files, type: ob.new_dataset(experiment = collection, type = type, file = files)
         case str(x), None:
-            loader = lambda files, type: ob.new_dataset(code = collection, type = file, file = files)
+            loader = lambda files, type: ob.new_dataset(sample = object, type = type, file = files)
         case str(x), str(y):
             raise HTTPException(401, detail='Either the sample or the collection must be specified, not both')
     current_parser = inst.parsers[params.parser]()
     try:
         nd = loader(str(file[0]), params.dataset_type)
+        nd.kind = 'PHYSICAL'
+        import pytest; pytest.set_trace()
+        trans = ob.new_transaction()
         trans.add(nd)
         current_parser.process(ob, trans, nd, **params.function_parameters)
-    except ValueError:
-        raise HTTPException(401)
+        trans.commit()
+    except ValueError as e:
+        raise HTTPException(401, detail=str(e))
     return {"permid": nd.code}

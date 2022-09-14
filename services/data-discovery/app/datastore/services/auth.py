@@ -135,16 +135,21 @@ class RedisCredentialsStore(AbstractCredentialStore):
         self.redis.set(self.store_key(key,'invalidated'), True)
     
     def remove(self, key: str, audience: str):
-        self.redis.delete(self.store_key(key,audience))
+        self.redis.delete(self.store_key(key, audience))
         self.invalidate(key)
 
     def store(self, key: str, audience: str, cred: Credentials) -> None:
-        self.redis.set(self.store_key(key, audience), cred.json())
-    
-    def retreive(self, key: str, audience: str) -> Credentials:
         if not self.is_invalidated(key):
             valid = self.decode_all(key, audience)
-            return self.redis.get(self.store_key(key, valid))
+            for v in valid:
+                self.redis.set(self.store_key(key, v), cred.json(), ex = self.context.token_expires_minutes)
+    
+    def retreive(self, key: str, audience: str) -> Credentials | None:
+        if not self.is_invalidated(key):
+            valid = self.decode_all(key, [audience])
+            return self.redis.get(self.store_key(key, valid[0]))
+        else:
+            raise JWTError("This token has been invalidated")
 
 @dataclass
 class CredentialsStore(AbstractCredentialStore):
@@ -180,7 +185,7 @@ class CredentialsStore(AbstractCredentialStore):
     def retreive(self, key: str, audience: str) -> Credentials:
         if not self.is_invalidated(key):
             try:
-                valid = self.decode_all(key, audience)
+                valid = self.decode_all(key, [audience])
                 if audience in valid:
                     return self.items[(key, audience)]
                 else:
