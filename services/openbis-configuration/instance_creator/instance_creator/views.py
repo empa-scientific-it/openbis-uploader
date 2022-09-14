@@ -8,6 +8,8 @@ from pydantic import BaseModel, fields
 from dataclasses import dataclass
 import enum
 
+import utils
+
 class OpenbisHierarcy(enum.Enum):
     OBJECT = "OBJECT"
     COLLECTION = "COLLECTION"
@@ -82,8 +84,6 @@ class OpenbisSampleInfo:
     collection: List[str] | None
 
 
-def split_identifier(id: str, sep='/') -> List[str] | None:
-    return list(filter(None, id.split(sep)))
 
 def get_samples_with_info(ob: pybis.Openbis) -> List[List[str]]:
     """
@@ -92,7 +92,7 @@ def get_samples_with_info(ob: pybis.Openbis) -> List[List[str]]:
     """
     objs = ob.get_objects(attrs=['space', 'experiment', 'project', 'code', 'type', "permId"])
     paths = [
-        OpenbisSampleInfo(split_identifier(o.identifier), o.code, o.permId, o.type, split_identifier(o.space), split_identifier(o.project), split_identifier(o.experiment)) for o in objs.df.itertuples()
+        OpenbisSampleInfo(utils.split_identifier(o.identifier), o.code, o.permId, o.type, utils.split_identifier(o.space), utils.split_identifier(o.project), utils.split_identifier(o.experiment)) for o in objs.df.itertuples()
     ]
     return paths
 
@@ -158,8 +158,4 @@ def build_sample_tree_from_list(ob: pybis.Openbis) -> TreeElement:
             collection=samp.experiment, type=OpenbisHierarcy.OBJECT, openbis_type=samp.type, ancestors=samp.parents, descendants=samp.children))
     return base_tree
 
-def build_sample_tree(ob: pybis.Openbis) -> TreeElement:
-    sample_info = get_samples_with_info(ob)
-
-    return tree_builder(sample_info)
 

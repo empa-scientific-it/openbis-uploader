@@ -1,18 +1,25 @@
 {
     "spaces": [
         {
-            "code": "MEASUREMENTS",
+            "code": "DEMO",
             "projects": [
                 {
                     "code": "TEST",
                     "collections": [
                         {
-                            "code": "EXP1",
+                            "code":"SAMPLES",
+                            "type":"DEFAULT_COLLECTION"
+                        },
+                        {
+                            "code":"SAMPLES_PREPARATION",
+                            "type":"DEFAULT_COLLECTION"
+                        },
+                        {
+                            "code": "ICP_MS_MEASUREMENTS",
                             "type": "DEFAULT_COLLECTION",
                             "samples": [
-                                {"type":"ICP-MS-MEASUREMENT", "properties":{"sample_id":1, "gas_flow":0.1, "acq_timestamp":"2022-08-26T00:00:00Z"}}
-                            ],
-                            "properties": {"measurement_id": 1}
+                                {"type":"SAMPLE", "properties":{"sample.name":"1", "sample.source": "Empa"}}
+                            ]
                         }
                     ]
                 }
@@ -27,10 +34,16 @@
             "data_type": "INTEGER"
         },
         {
-            "code": "MEASUREMENT_ID",
+            "code": "SAMPLE_NAME",
             "label": "measurement_id",
             "description": "Id of measurements",
-            "data_type": "INTEGER"
+            "data_type": "VARCHAR"
+        },
+        {
+            "code": "INSTRUMENT_ID",
+            "label": "instrument_id",
+            "description": "Id of  ICMP-MS instrument",
+            "data_type": "VARCHAR"
         },
         {
             "code": "GAS_FLOW",
@@ -43,20 +56,78 @@
             "label": "Acquisiton_timestamp",
             "description": "Timestamp of acquisition",
             "data_type": "TIMESTAMP"
+        },
+        {
+            "code": "SAMPLE_TYPE",
+            "label": "sample_type",
+            "description": "Type of ICP-MS sample",
+            "data_type": "VARCHAR"
+        },
+        {
+            "code": "VIAL_NUMBER",
+            "label": "vial_number",
+            "description": "Vial number of sample",
+            "data_type": "INTEGER"
+        },
+        {
+            "code": "ACQUISTION_RESULT",
+            "label": "acquistion_result",
+            "description": "Result of acquisition",
+            "data_type": "VARCHAR"
+        },
+        {
+            "code": "OPERATOR",
+            "label": "OPERATOR",
+            "description": "Operator of instrument",
+            "data_type": "VARCHAR"
+        
         }
     ],
     "collection_types": [
         {
             "code":"DEFAULT_COLLECTION",
-            "description":"DC",
-            "properties": ["MEASUREMENT_ID"]
+            "description":"DC"
         }
     ],
     "object_types": [
         {
+            "code": "SAMPLE",
+            "prefix": "SAMP",
+            "properties": {
+                "General Information": [
+                    {
+                        "code":"SAMPLE.NAME",
+                        "label": "Sample name",
+                        "description": "name of sample",
+                        "data_type":"VARCHAR"
+                    },
+                    {
+                        "code":"SAMPLE.SOURCE",
+                        "label": "Source of the sample",
+                        "description": "Please indicate the source of the sample if known",
+                        "data_type":"VARCHAR"
+                    },
+                    {
+                        "code":"SAMPLE.SOURCE",
+                        "label": "Source of the sample",
+                        "description": "Please indicate the source of the sample if known",
+                        "data_type":"VARCHAR"
+                    }
+                ]
+            }
+        },
+        {
             "code": "ICP-MS-MEASUREMENT",
             "prefix": "ICPMS_MEAS",
-            "properties": {"one":["SAMPLE_ID", "GAS_FLOW", "ACQ_TIMESTAMP"]}
+            "properties": {
+                "ID":[
+                    
+                ]
+            }
     }
+    ],
+    "roles": [
+        {"user":"basi", "space":"DEMO", "role":"POWER_USER", "level":"SPACE"},
+        {"user":"baan", "space":"DEMO", "role":"POWER_USER", "level":"SPACE"}
     ]
 }

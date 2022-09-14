@@ -32,7 +32,6 @@ def children_validator(values: TreeObject, stack: List[str]):
     the its full path at creation time
     """
     #breakpoint()
-    print(values.code, stack)
     if values.children:  
         for child in values.children:
             # if child.code:
