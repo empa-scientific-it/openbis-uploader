@@ -31,10 +31,9 @@ tran = ob.new_transaction()
 
 
 class TestParser(OpenbisDatasetParser):
-    a: int = 1
-    b: str = 'bla'
 
-    def process(tran: Transaction, dataset: DataSet, a: int, b:'str') -> Transaction:
+
+    def process(self, transaction: Transaction, dataset: DataSet, a: int, b:str, c:str = 'gala') -> Transaction:
         pybis.Openbis.new_object('ICP-MS-MEASUREMENT', '/MEASUREMENTS/TEST/ICPMS_MEAS1', {'GAS_FLOW':1.2, 'SAMPLE_ID':a})
     
 

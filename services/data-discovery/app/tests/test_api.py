@@ -193,7 +193,7 @@ def test_parser_parameters(client, token):
     pytest.set_trace()
 
 def test_icp_ms_parser(client, token):
-    body = {'source':"ICP-MS RAW.zip", 'collection': '/MEASUREMENTS/TEST/EXP1', 'parser':'icp_ms', 'dataset_type':'RAW_DATA', 'function_parameters': {'a':1}}
+    body = {'source':"ICP-MS RAW.zip", 'object': '/DEMO/TEST/SAMP1', 'parser':'icp_ms', 'dataset_type':'RAW_DATA', 'function_parameters': {'loader_name':"Simone", 'description':"I added a new measurement"}}
     transfer_query = client.put(f"/datasets/transfer", headers=token("all"), json=body)
     import pytest; pytest.set_trace()
 
@@ -201,7 +201,7 @@ def test_icp_ms_parser(client, token):
 def test_parser_class() -> Type[OpenbisDatasetParser]:
     class TestParser(OpenbisDatasetParser):
         def process(self, transaction: Transaction, ob: Openbis, dataset: DataSet, a: int, b:str, c:str = 'gala') -> Transaction:
-            ob.new_object('ICP-MS-MEASUREMENT', '/MEASUREMENTS/TEST/ICPMS_MEAS1', {'GAS_FLOW':1.2, 'SAMPLE_ID':a})
+            ob.new_object('ICP-MS-MEASUREMENT', '/MEASUREMENTS/TEST/SAMP1', {'GAS_FLOW':1.2, 'SAMPLE_ID':a})
             return transaction 
     return TestParser 
 

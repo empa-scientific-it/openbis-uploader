@@ -1,4 +1,5 @@
 from urllib.error import HTTPError
+from xml.dom.minidom import Entity
 from fastapi import APIRouter
 
 from fastapi import FastAPI, File, UploadFile, Depends, HTTPException, Body
@@ -139,18 +140,20 @@ async def transfer_file(params: ParserParameters, inst: files.InstanceDataStore 
     match object, collection:
         case None, str(y):
             loader = lambda files, type: ob.new_dataset(experiment = collection, type = type, file = files)
+            entity = ob.get_collection(params.collection)
         case str(x), None:
             loader = lambda files, type: ob.new_dataset(sample = object, type = type, file = files)
+            entity = ob.get_object(params.object)
         case str(x), str(y):
             raise HTTPException(401, detail='Either the sample or the collection must be specified, not both')
     current_parser = inst.parsers[params.parser]()
     try:
         nd = loader(str(file[0]), params.dataset_type)
         nd.kind = 'PHYSICAL'
-        import pytest; pytest.set_trace()
         trans = ob.new_transaction()
-        trans.add(nd)
+        #trans.add(nd)
         current_parser.process(ob, trans, nd, **params.function_parameters)
+        import pytest; pytest.set_trace()
         trans.commit()
     except ValueError as e:
         raise HTTPException(401, detail=str(e))
