@@ -39,6 +39,7 @@ SACRED_SPACES = ['ELN_SETTINGS', 'STORAGE', 'METHODS', 'MATERIALS', 'STOCK_CATAL
 SACRED_USERS = ['etl', 'system']
 SACRED_OBJECT_TYPES = ['UNKNOWN', 'GENERAL_ELN_SETTINGS', 'ENTRY', 'GENERAL_PROTOCOL', 'EXPERIMENTAL_STEP', 'STORAGE', 'STORAGE_POSITION', 'SUPPLIER', 'PRODUCT', 'REQUEST', 'ORDER', 'PUBLICATION', 'SEARCH_QUERY']
 SACRED_COLLECTION_TYPES = ['DEFAULT_EXPERIMENT', 'UNKNOWN', 'COLLECTION']
+
 class OpenbisGenericObject(ABC, BaseModel, TreeObject):
     """
     Abstract base class implementing
@@ -62,7 +63,6 @@ class OpenbisGenericObject(ABC, BaseModel, TreeObject):
         pass
 
 
-
     @classmethod
     def from_openbis(cls, ob: pybis.Openbis, code: str) -> 'OpenbisGenericObject':
         pass
@@ -72,10 +72,10 @@ class OpenbisRoleAssignment(OpenbisGenericObject):
     """
     Class to represent openbis role assignment for an unser
     """
-    techid: int = None
+    techid: int | None = None
     user: str | None = None
-    role: Literal["OBSERVER", "POWER_USER", "ADMIN", "ETL_SERVER", "USER"]  = None
-    level: Literal["INSTANCE","SPACE","PROJECT"]  = None
+    role: Literal["OBSERVER", "POWER_USER", "ADMIN", "ETL_SERVER", "USER"] | None = None
+    level: Literal["INSTANCE","SPACE","PROJECT"] | None  = None
     space: str | None = None
     group: str | None = None
     project: str | None = None
@@ -90,12 +90,12 @@ class OpenbisRoleAssignment(OpenbisGenericObject):
             assign.delete()
 
     @classmethod
-    def from_openbis(cls, ob: pybis.Openbis, code: str):
+    def from_openbis(cls, ob: pybis.Openbis, code: str) -> Optional['OpenbisRoleAssignment']:
         ob_obj = ob.get_role_assignment(code)
-        sp = ob_obj.space.code if ob_obj.space else None
-        pr = ob_obj.project.code if ob_obj.project else None
         if ob_obj:
-            return cls(code=code, techid=code, user=ob_obj.user, level=ob_obj.roleLevel, space=sp, project=pr, group=ob_obj.group)
+            sp = ob_obj.space.code if ob_obj.space else None
+            pr = ob_obj.project.code if ob_obj.project else None
+            return cls(code=code, techid=int(code), user=ob_obj.user, level=ob_obj.roleLevel, space=sp, project=pr, group=ob_obj.group)
 
     def reflect(self, ob: pybis.Openbis) -> 'OpenbisRoleAssignment':
         ra = self.get_ob_object(ob)
@@ -151,13 +151,22 @@ class OpenbisUser(OpenbisGenericObject):
 class OpenbisTreeObject(OpenbisGenericObject):
     """
     Class implementing a generic object in the openbis tree
-    (Instance / Space / Project / Collection / Experiment)
+    (Instance / Space / Project / Collection / Experiment),
+    which can have parent, children and samples
+
+    :param code: The openbis object code (NOT the full path identifier)
+    :param perm_id: The openbis permid
+    :param children: A list of children  
+    :param samples: A list of children  
+
     """
     code: str | None = None
     perm_id: str | None = None
     parent_id: List[str] = Field(None, exclude=True)
     children: List['OpenbisTreeObject'] | List = []
-    samples: List['OpenbisSample']
+    samples: List['OpenbisSample'] | List = []
+    rel_in: List[str] | List = []
+    rel_out: List[str] | List = []
 
     def path(self) -> str:
         els = [el for el in self.parent_id if el is not None] + [(self.code if self.code is not None else '')]
@@ -190,7 +199,10 @@ class OpenbisTreeObject(OpenbisGenericObject):
                 child.wipe(ob)
         obj = self.get_ob_object(ob)
         if obj.registrator != 'system':
-            obj.delete(f"Deleted by {self.__class__}")
+            try:
+                obj.delete(f"Deleted by {self.__class__}")
+            except ValueError:
+                pass
 
 
 
@@ -210,8 +222,6 @@ class OpenbisSample(OpenbisTreeObject):
         exp_path = (collection.path() if collection is not None else None)
         sp_path = (space.path() if space is not None else None)
         proj_path = (project.path() if project is not None else None)
-        breakpoint()
-
         sm = ob.new_sample(self.type, experiment=exp_path, space=sp_path, project=proj_path, props = self.properties)
         try:
             sm.save()
@@ -225,6 +235,9 @@ class OpenbisSample(OpenbisTreeObject):
 
     @classmethod
     def from_openbis(cls, ob: pybis.Openbis, code: str) -> 'OpenbisSample':
+        """
+        Creates a sample from openbis given its code (the full identifier in this case)
+        """
         item = ob.get_object(code)
         obj = cls(code=item.code, 
             identifier=item.identifier, 
