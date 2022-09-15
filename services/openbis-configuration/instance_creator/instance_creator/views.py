@@ -8,7 +8,7 @@ from pydantic import BaseModel, fields
 from dataclasses import dataclass
 import enum
 
-import utils
+from . import utils
 
 class OpenbisHierarcy(enum.Enum):
     OBJECT = "OBJECT"

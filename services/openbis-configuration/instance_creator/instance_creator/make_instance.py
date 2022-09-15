@@ -37,13 +37,11 @@ def main():
     ob = pybis.Openbis(args.url,  verify_certificates=False, use_cache=False)
     ob.logout()
     ob.login(args.username, args.password)
-    breakpoint()
     match args.what:
         case 'create':
             if args.wipe:
                 oi = OpenbisInstance.reflect(ob)
                 oi.wipe(ob)
-            breakpoint()
             oi = OpenbisInstance.parse_file(args.config).create(ob)
         case 'export':
             instance_config = OpenbisInstance.reflect(ob).export(args.config)
