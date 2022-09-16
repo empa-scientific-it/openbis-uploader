@@ -6,4 +6,5 @@ function bearer(token: String): HeadersInit {
 }
     
 
+
 export {bearer}

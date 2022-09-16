@@ -30,6 +30,10 @@ export const useFiles = defineStore(
             const names = this.fileList.map(el => el.name);
             return names.includes(id);
         },
+        async uploadFile(file: File){
+            await DropBox.uploadFile(bearerHeaderAuth(), file);
+            await this.getFileList();
+        },
         async transfer(sourceId: string, destination: string, dataSetType: string, level: OpenbisObjectTypes, parser: string){
             if(this.contains(sourceId)){
                 await DropBox.transferFile(bearerHeaderAuth(), sourceId, destination, dataSetType, level, parser);

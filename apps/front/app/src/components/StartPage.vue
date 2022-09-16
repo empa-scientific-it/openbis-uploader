@@ -70,6 +70,10 @@
       showPopup.value = !showPopup.value;
     }
 
+    async function handleUploadToDatastore(ev: DataTransfer){
+      await files.uploadFile(ev.files[0]);
+    }
+
 </script>
 
 
@@ -87,8 +91,9 @@
     </div>
     <div class="main">
       <h2>Files on Datastore</h2>
-      <FileList @moved="handleFileMoved"></FileList>
+      <FileList @moved="handleFileMoved" @dropped="handleUploadToDatastore"></FileList>
     </div>
+    <div></div>
   <UploadPrompt :show="showPopup" @cancel="handleCancel" @save="handleTransfer" :file="selected" :dest="current"></UploadPrompt>
 </div>
 </template>
@@ -96,14 +101,20 @@
 
 <style>
 
+
+.menu, .main {
+  min-width: max-content;
+}
+
 .main .tbody {
         overflow-y:auto;
-        height: 50%;
+        height: 90%;
+
     }
 
 .menu ul  {
         overflow-y:auto;
-        height: 50%;
+        height: 90%;
     }
 
 
@@ -128,7 +139,7 @@
 grid-item {
   display: grid;            /* new */
   align-items: left;      /* new */
-  justify-items: left;    /* new */
+  justify-items: center;    /* new */
   align-self: stretch;
 }
 

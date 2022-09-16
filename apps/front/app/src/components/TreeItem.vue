@@ -14,8 +14,8 @@
   const openbis = useOpenbis();
   const {tree, current, datasetTypes} = storeToRefs(openbis);
 
-
-  const isOpen = ref(false)
+  // Open the tree root
+  const isOpen = ref(props.model.id == '/' ? true : false )
   const isFolder = computed(() => {
   return props.model.children && props.model.children.length
   })
@@ -36,6 +36,7 @@
     isOpen.value = !isOpen.value
     current.value = props.model;
     console.log(current.value);
+    debugger
   }
 
   const emit = defineEmits<{(event: 'dropped', target: string): void }>();

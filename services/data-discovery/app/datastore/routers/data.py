@@ -78,7 +78,7 @@ async def list_files(inst: files.InstanceDataStore = Depends(get_user_instance))
 
 
 @router.post("/")
-async def upload_file(file: UploadFile, inst: files.InstanceDataStore = Depends(get_user_instance)) -> None:
+async def upload_file(file: UploadFile, inst: files.InstanceDataStore = Depends(get_user_instance)) -> Dict:
     """
     Upload a new file to the instance
     """
@@ -91,7 +91,6 @@ async def upload_file(file: UploadFile, inst: files.InstanceDataStore = Depends(
         return {"message": "There was an error uploading the file"}
     finally:
         await file.close()
-
     return {"message": f"Successfuly uploaded {file.filename} to {out_path}"}
 
 @router.delete("/")
@@ -147,13 +146,14 @@ async def transfer_file(params: ParserParameters, inst: files.InstanceDataStore 
         case str(x), str(y):
             raise HTTPException(401, detail='Either the sample or the collection must be specified, not both')
     current_parser = inst.parsers[params.parser]()
+   
+    nd = loader(str(file[0]), params.dataset_type)
+    nd.kind = 'PHYSICAL'
+    trans = ob.new_transaction()
+    #trans.add(nd)
+    current_parser.process(ob, trans, nd, **params.function_parameters)
+    import pytest; pytest.set_trace()
     try:
-        nd = loader(str(file[0]), params.dataset_type)
-        nd.kind = 'PHYSICAL'
-        trans = ob.new_transaction()
-        #trans.add(nd)
-        current_parser.process(ob, trans, nd, **params.function_parameters)
-        import pytest; pytest.set_trace()
         trans.commit()
     except ValueError as e:
         raise HTTPException(401, detail=str(e))

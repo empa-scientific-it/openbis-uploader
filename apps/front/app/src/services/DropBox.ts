@@ -6,6 +6,8 @@ import { ParserParameters, ParserParameter } from '../models/ParserParameters'
 
 const apiPath = 'data-discovery';
 
+
+
 export async function login(user:string, password:string): Promise<string> {
 
     const fd =  new FormData();
@@ -81,6 +83,21 @@ export async function  getDatasetTypes(headers: HeadersInit): Promise<string[]>{
         }
 }
     
+
+export async function uploadFile(headers: HeadersInit, file: File): Promise<object>{
+    const payload = new FormData();
+    payload.append('file', file, file.name);
+    const req =  new Request(`${apiPath}/datasets/`, {method: 'POST', headers: headers, 'body': payload});
+    const response = await fetch(req);
+    const body = await response.json();
+    if (response.ok){
+        return body
+    }else{
+        const error = new Error(response.statusText);
+        throw(error);  
+    }
+}
+
 export async function  getParsers(headers: HeadersInit): Promise<string[]>{
     const req =  new Request(`${apiPath}/datasets/parsers`, {method: 'GET', headers: headers});
     const response = await fetch(req);

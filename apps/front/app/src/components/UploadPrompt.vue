@@ -84,9 +84,9 @@
                                     {{item}}
                                 </option>
                             </select><br>
-                            <label for="select-parser">Choose a dataset parser:</label>
+                            <label for="select-parser">Select a metadata extraction script:</label>
                             <select v-model="selectedParser" id="select-parser" @change="handleParserChange">
-                                <option>Select a parser</option>
+                                <option>select a script</option>
                                 <option v-for="item in parserTypes" :value="item" :key="item" >
                                     {{item}}
                                 </option>
@@ -102,7 +102,6 @@
                     </form>
                 </slot>
             </div>
-
             <div class="modal-footer">
                 <slot name="modal-footer">
                     <slot name="error" v-if="transferError !== null" >

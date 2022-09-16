@@ -8,21 +8,28 @@
     import { useFiles } from '../stores/files';
 
    
-    const files = useFiles();
-    const {fileList, selected} = storeToRefs(files);
+    const ds = useFiles();
+    const {fileList, selected} = storeToRefs(ds);
 
-    const emit = defineEmits<{(event: 'moved', id: string)}>()
+    const emit = defineEmits<{
+        (event: 'moved', id: string),
+        (event: 'dropped', file: DataTransfer)
+    }>()
 
     function handleFileMoved(item){
         selected.value = item;
         emit('moved', item.name);
     }
 
+    function handleFileDropped(ev: DragEvent){
+        console.log(ev.dataTransfer.files[0])
+        emit('dropped', ev.dataTransfer)
+    }
 </script>
 
 
 <template>
-    <div class="fixedhead">
+    <div class="fixedhead" @drop.prevent="handleFileDropped"  @dragover.prevent  @dragenter.prevent>
         <table id="files" class="table table-striped table-bordered">
         <thead>
             <tr>
@@ -32,7 +39,7 @@
             </tr>
         </thead>
         <tbody>
-            <tr v-for="item in fileList" :files="files" class="item" draggable=true  @dragover.prevent  @dragenter.prevent  @dragend="handleFileMoved(item)" @dragstart="handleFileMoved(item)" :id="item.name">
+            <tr v-for="item in fileList" class="item" draggable=true  @dragover.prevent  @dragenter.prevent  @dragend="handleFileMoved(item)" @dragstart="handleFileMoved(item)" :id="item.name">
                 <td class="bi bi-file-earmark" :id="item.name" @click="selected.value=item"></td>
                 <td>{{ item.name }}</td>
                 <td>{{ item.created }}</td>
@@ -48,7 +55,7 @@
 <style>
      .fixedhead {
         overflow-y:auto;
-        height: 20%;
+        height: 100%;
     }
     .fixedhead thead tr th {
       position: sticky;
@@ -56,6 +63,8 @@
       fill: white;
       background: white;
     }
+
+
     table {
       border-collapse: collapse;        
       width: 100%;
