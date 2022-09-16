@@ -26,6 +26,11 @@ export default defineConfig({
             target: "http://data-discovery:80/",
             rewrite: (path) =>  path.replace(/^\/data-discovery/, "")
         }
+    },
+    build:
+    {
+        target: 'es2021',
+        supported: ['array-spread']
     }
 }
 });

@@ -1,6 +1,6 @@
 <script setup lang="ts">
     import { declareVariable } from '@babel/types';
-    import { PropType } from 'vue';
+    import { PropType, toRefs, toRaw } from 'vue';
     import {FileInfo} from '../models/Files';
     import {OpenbisObjectTypes} from '../models/Tree';
     import {ParserParameters, ParserParameter, parameterObject} from '../models/ParserParameters';
@@ -18,48 +18,74 @@
     const {tree, current, datasetTypes, parserTypes} = storeToRefs(openbis);
     const {fileList, selected} = storeToRefs(files);
     
-    const selectedType = ref('');
-    const selectedParser = ref('');
-    const transferError = ref(null);
-    const parserParameterInfo = ref({} as ParserParameters)
-    const selectedParams = ref({});
+    // const selectedType = ref('');
+    // const selectedParser = ref('');
+    // const transferError = ref(null);
+    // const parserParameterInfo = ref({} as ParserParameters)
+    // const selectedParams = ref({});
     const props = defineProps({
         show: Boolean,
     })
 
-    onMounted(
-        async () => {
-            const dsTypes= await openbis.getDatasetTypes()
-        }
-    )
+
+    interface state {
+        selectedType: string,
+        selectedParser: string,
+        transferError: string| void,
+        parserParameterInfo: ParserParameter,
+        selectedParams: object
+    }
+
+    function initialState(): state{
+        return {
+        selectedType: '',
+        selectedParser: '',
+        transferError: null,
+        parserParameterInfo: {} as ParserParameter,
+        selectedParams: {}
+    }
+    }
+
+    const state = initialState()
+    const formData = ref(state);
+
 
     const thisShow = toRef(props, 'show')
-
+    const cancelPrevent = ref(false);
     const emit = defineEmits<{
             (e: 'save'): void
             (e: 'cancel', value: Boolean): void}>()
 
     async function handleSave(){
-        console.log("args", selected.value.name, current.value.code, selectedType.value, (current.value.type as OpenbisObjectTypes), selectedParams.value);
-        if(selected?.value && selectedParams.value){
+        console.log("args", selected.value.name, current.value.code, formData.value.selectedType, (current.value.type as OpenbisObjectTypes),  toRaw(formData.value.selectedParams));
+        if(selected?.value && formData.value.selectedParams){
             try{
-                await files.transfer(selected.value.name, current.value.id, selectedType.value, (current.value.type as OpenbisObjectTypes), selectedParser.value);
+                cancelPrevent.value = true;
+                const saved = await files.transfer(selected.value.name, current.value.identifier, formData.value.selectedType, (current.value.type as OpenbisObjectTypes), formData.value.selectedParser, toRaw(formData.value.selectedParams));
                 emit('save')
             }
             catch(e:any){
-                transferError.value = e;
+                formData.value.transferError = e;
+                debugger;
             }
         }
     }
 
+    function handleCancel(){
+        if (!cancelPrevent.value){
+            formData.value = initialState();
+            emit('cancel', false)
+        }
+
+    }
+
     function handleTransferError(){
-        transferError.value = null;
+        formData.value.transferError = null;
         thisShow.value = !thisShow.value; 
     }
 
     async function handleParserChange(){
-        parserParameterInfo.value = await openbis.getParserParameters(selectedParser.value);
-        const po = parameterObject(parserParameterInfo.value);
+        formData.value.parserParameterInfo = await openbis.getParserParameters(formData.value.selectedParser);
     }
 </script>
 
@@ -70,7 +96,7 @@
         <div class="modal-wrapper">
             <div class="modal-container">
             <div class="modal-header">
-                <slot name="header">  Save {{selected.name}} to {{current.id}}</slot>
+                <slot name="header">  Save {{selected.name}} to {{current.type}}: {{current.id}}</slot>
             </div>
             <div class="modal-body">
                 <slot name="body">
@@ -78,14 +104,14 @@
                         <fieldset class="form-group">
                             <legend>General dataset properties</legend>
                             <label for="select-type">Choose a dataset type:</label>
-                            <select v-model="selectedType" id="select-type">
+                            <select v-model="formData.selectedType" id="select-type">
                                 <option>Select a parser</option>
                                 <option v-for="item in datasetTypes" :value="item" :key="item">
                                     {{item}}
                                 </option>
                             </select><br>
                             <label for="select-parser">Select a metadata extraction script:</label>
-                            <select v-model="selectedParser" id="select-parser" @change="handleParserChange">
+                            <select v-model="formData.selectedParser" id="select-parser" @change="handleParserChange">
                                 <option>select a script</option>
                                 <option v-for="item in parserTypes" :value="item" :key="item" >
                                     {{item}}
@@ -93,10 +119,10 @@
                             </select> 
                         </fieldset><br>
                         <fieldset class="form-group">
-                            <legend>Parser parameters</legend>
-                            <div v-if="parserParameterInfo.properties" v-for="(parameter, key) in parserParameterInfo.properties">
-                                <label :for="key">Parameter: {{key}}</label>
-                                <input v-model="selectedParams[key]" :id="key">
+                            <legend>Script parameters</legend>
+                            <div v-if="formData.parserParameterInfo.properties" v-for="(parameter, key) in formData.parserParameterInfo.properties">
+                                <label :for="key">{{key}}</label>
+                                <input v-model="formData.selectedParams[key]" :id="key">
                             </div>
                         </fieldset>
                     </form>
@@ -104,8 +130,8 @@
             </div>
             <div class="modal-footer">
                 <slot name="modal-footer">
-                    <slot name="error" v-if="transferError !== null" >
-                        {{transferError}}
+                    <slot name="error" v-if="formData.transferError !== null" >
+                        {{formData.transferError}}
                     </slot>
                     <button
                         class="modal-default-button"
@@ -113,7 +139,7 @@
                     >OK</button>
                     <button
                         class="modal-default-button"
-                        @click="$emit('cancel')"
+                        @click="handleCancel"
                     >Cancel</button>
                 </slot>
             </div>

@@ -1,10 +1,12 @@
 
 
 export interface TreeNode {
-    id: string
+    identifier: string
     type: OpenbisObjectTypes | void
     code: string  | void
+    perm_id: string | void
     children: TreeNode[] | void 
+    attributes: {}
 }
 
 export const enum OpenbisObjectTypes{

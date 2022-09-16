@@ -46,8 +46,8 @@ export async function logout(token: string): Promise<boolean> {
 }
 
 export async function  checkToken(token: string): Promise<boolean>{
-    const base = `${apiPath}/authorize/all/check?token`
-    const params = new  URLSearchParams({token: token})
+    const base = `${apiPath}/authorize/all/check?`
+    const params = new  URLSearchParams({token: JSON.stringify(token)})
     const req =  new Request( base + params.toString(), {method: 'GET'});
     const response = await fetch(req);
     const body = await response.json();
@@ -135,38 +135,43 @@ export async function  getFiles(headers: HeadersInit, pattern: string): Promise<
         throw(error);  
     }
 }
-export async function  transferFile(headers: HeadersInit, fileId: string, targetId: string, datasetType: string, targetType: OpenbisObjectTypes, parser: string): Promise<object>{
-    const req_string = `${apiPath}/datasets/transfer?` 
+
+
+function transferBody(fileId: string, targetId: string, datasetType: string, targetType: OpenbisObjectTypes, parser: string, parameters: object): object
+{
+
+    const a  =  {
+        ...((targetType == OpenbisObjectTypes.OBJECT) ? {object: targetId} : {}),
+        ...((targetType == OpenbisObjectTypes.COLLECTION) ? {collection: targetId} : {}),
+        dataset_type: datasetType,
+        parser: parser,
+        source: fileId,
+        function_parameters: parameters
+        
+    }
+    return a
+}
+
+export async function  transferFile(headers: Headers, fileId: string, targetId: string, datasetType: string, targetType: OpenbisObjectTypes, parser: string, params: object): Promise<object>{
+    const req_string = `${apiPath}/datasets/transfer` 
     const param_string = new URLSearchParams();
-    switch(targetType){
-        case OpenbisObjectTypes.SPACE:
-            console.log("SPACE")
-            throw new Error("Cannot assign dataset to spaces");
-        case OpenbisObjectTypes.INSTANCE:
-            console.log("INSTANCE")
-            throw new Error("Cannot assign dataset to instance");
-        case OpenbisObjectTypes.PROJECT:
-            throw new Error("Cannot assign dataset to projects");
-        case OpenbisObjectTypes.OBJECT:
-            console.log("OBJECT")
-            param_string.append("object", targetId);
-            break;
-        case OpenbisObjectTypes.COLLECTION:
-            param_string.append("collection", targetId)
-            console.log("COllection")
-            break;
-    }
-    param_string.append('dataset_type', datasetType);
-    param_string.append('source', fileId);
-    param_string.append('parser', parser);
-    console.log(param_string);
-    const req =  new Request(req_string + param_string.toString(), {method: 'GET', headers: headers});
-    const response = await fetch(req);
-    const body = await response.json();
-    if (response.ok){
-        return body
+    if(![OpenbisObjectTypes.OBJECT, OpenbisObjectTypes.COLLECTION].includes(targetType)){
+        throw new Error('Can only upload to object or collection')
     }else{
-        const error = new Error(JSON.stringify(body?.detail));
-        throw(error);  
+        const reqBody = transferBody(fileId, targetId, datasetType, targetType, parser, params)
+        console.log(JSON.stringify(reqBody))
+        headers.set('Accept', 'application/json')
+        headers.set('Content-Type', 'application/json')
+        const req =  new Request(req_string , {method: 'PUT', headers: headers, body: JSON.stringify(reqBody)});
+        const response = await fetch(req);
+        const body = await response.json();
+        if (response.ok){
+            return body
+        }else{
+            console.log(body)
+            const error = new Error(JSON.stringify(body?.detail));
+            throw(error);  
+        }
     }
+
 }

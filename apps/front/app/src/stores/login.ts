@@ -85,6 +85,13 @@ export const useUser = defineStore('login',
             }
             
         },
+        async tokenValid(): Promise<boolean>{
+            const valid = await DropBox.checkToken(this.sessionToken);
+            if(!valid){
+                this.loggedIn = false;
+            }
+            return valid
+        },
         async logout(): Promise<boolean>{
             try{
                 const done = await DropBox.logout(this.sessionToken);

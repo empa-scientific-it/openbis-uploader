@@ -9,7 +9,9 @@
     import {storeToRefs} from 'pinia';
     import TreeItem from './TreeItem.vue'
     import FileList from './FileList.vue'
+    import ObjectInfo from './ObjectInfo.vue';
     import UploadPrompt from './UploadPrompt.vue';
+    import { TreeNode } from '../models/Tree';
 
     const auth = useUser();
     const user = auth.user;
@@ -26,15 +28,7 @@
       console.log(event)
     };
 
-    // async function dropFile(event: DropEvent){
-    //   debugger
-    //   const fileId = event.dataTransfer.getData('id')
 
-    //   showPopup.value = true;
-    //   console.log(`transfer ${fileId} to ${targetId}`);
-    //   console.log(showPopup.value)
-    //   //await files.transfer(fileId, targetId);
-    // };
     onBeforeMount(
       async () => {
         await openbis.init()
@@ -65,6 +59,7 @@
     async function handleTransfer(){
       console.log(`${selected.value} to ${current.value}`)
       showPopup.value = !showPopup.value;
+      await openbis.updateTree();
     }
     function handleCancel(ev){
       showPopup.value = !showPopup.value;
@@ -73,6 +68,15 @@
     async function handleUploadToDatastore(ev: DataTransfer){
       await files.uploadFile(ev.files[0]);
     }
+
+    async function updateCurrentTree() {
+      await openbis.updateTree()
+    }
+
+    function handleSelectedTreeNode(tn: TreeNode) {
+      current.value = tn;
+    }
+
 
 </script>
 
@@ -86,7 +90,13 @@
     <div class="menu">
       <h2>Openbis Tree</h2>
       <ul>
-        <TreeItem class="item" :model="tree" @dropped="handleFileDropped"></TreeItem>
+        <TreeItem class="item" :model="tree" @dropped="handleFileDropped" @click="updateCurrentTree" @selected="handleSelectedTreeNode"></TreeItem>
+      </ul>
+    </div>
+    <div class="right">
+      <h2>Openbis Tree</h2>
+      <ul>
+        <ObjectInfo  :item="current"></ObjectInfo>
       </ul>
     </div>
     <div class="main">

@@ -3,6 +3,7 @@ import * as DropBox from '../services/DropBox'
 import {bearerHeaderAuth} from '../helpers/auth'
 import {FileInfo} from '../models/Files'
 import {OpenbisObjectTypes} from '../models/Tree'
+import { ParserParameters } from '../models/ParserParameters'
 
 
 interface State {
@@ -23,7 +24,8 @@ export const useFiles = defineStore(
     actions:
     {
         async getFileList(){
-            const files = await DropBox.getFiles(bearerHeaderAuth(), '*');
+            const tok = await bearerHeaderAuth();
+            const files = await DropBox.getFiles(tok, '*');
             this.fileList = files.files;
         },
         contains(id: string){
@@ -31,12 +33,14 @@ export const useFiles = defineStore(
             return names.includes(id);
         },
         async uploadFile(file: File){
-            await DropBox.uploadFile(bearerHeaderAuth(), file);
+            const tok = await bearerHeaderAuth();
+            await DropBox.uploadFile(tok, file);
             await this.getFileList();
         },
-        async transfer(sourceId: string, destination: string, dataSetType: string, level: OpenbisObjectTypes, parser: string){
+        async transfer(sourceId: string, destination: string, dataSetType: string, level: OpenbisObjectTypes, parser: string, params: ParserParameters){
             if(this.contains(sourceId)){
-                await DropBox.transferFile(bearerHeaderAuth(), sourceId, destination, dataSetType, level, parser);
+                const tok = await bearerHeaderAuth();
+                await DropBox.transferFile(tok, sourceId, destination, dataSetType, level, parser, params);
             }else{
                 throw new Error(`File not found: ${sourceId}`);
             }

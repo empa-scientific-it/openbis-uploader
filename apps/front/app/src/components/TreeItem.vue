@@ -14,11 +14,17 @@
   const openbis = useOpenbis();
   const {tree, current, datasetTypes} = storeToRefs(openbis);
 
+  const emit = defineEmits<{
+    (event: 'dropped', target: string): void,
+    (event: 'selected', element: TreeNode): void
+  }>();
+
   // Open the tree root
-  const isOpen = ref(props.model.id == '/' ? true : false )
+  const isOpen = ref(props.model.identifier == '/' ? true : false )
   const isFolder = computed(() => {
   return props.model.children && props.model.children.length
   })
+
 
   const itemIcon = computed(() => {
     console.log(isOpen.value)
@@ -34,23 +40,31 @@
 
   function toggle() {
     isOpen.value = !isOpen.value
-    current.value = props.model;
-    console.log(current.value);
-    debugger
+    emit('selected', props.model);
   }
 
-  const emit = defineEmits<{(event: 'dropped', target: string): void }>();
+  function handleSelected(e){
+    console.log(`Handler Currently in ${props.model.identifier}`);
+    emit('selected', e);
+  }
+
+
+  const valid_for_upload = ['COLLECTION', 'OBJECT']
 
   function handleDrop(event){
     console.log(event.dataTransfer.getData('id'))
-    console.log(`Handler Currently in ${props.model.id}`);
-    current.value = props.model;
-    emit('dropped', props.model.id);
+    console.log(`Handler Currently in ${props.model.identifier}`);
+    emit('selected', props.model);
+    if(valid_for_upload.includes(props?.model?.type)){
+      emit('dropped', props.model.identifier);
+    }else{
+      alert(`Dataset cannot be attached to ${props?.model?.type?.toLowerCase()}, only to collections or objects`)
+    }
   }
   // This just reemits the event all over the tree
   function handleDropped(level){
-  console.log(`Dropped Handler Currently in ${props.model.id} ${level}`);
-  emit('dropped', level)
+    console.log(`Dropped Handler Currently in ${props.model.identifier} ${level}`);
+    emit('dropped', level)
   }
 
 </script>
@@ -65,7 +79,7 @@
             <a>{{ model.code }}</a>
         </div>
     <ul v-show="isOpen" v-if="isFolder" >
-      <TreeItem class="tree" v-for="model in model.children" :model="model" @dropped="handleDropped">
+      <TreeItem class="tree" v-for="model in model.children" :model="model" @dropped="handleDropped" @selected="handleSelected">
       </TreeItem>
     </ul>
   </li>

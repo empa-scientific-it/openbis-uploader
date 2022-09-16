@@ -16,7 +16,6 @@ export interface ParserParametersResponse{
 }
 
 export function parameterObject(pp: ParserParameters): Map<string, any> {
-    debugger
     const res = [...new Map(Object.entries(pp?.properties))].map(([k, v]) => [k, null])
     return Object.fromEntries(res)
 }
