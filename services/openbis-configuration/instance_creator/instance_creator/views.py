@@ -26,6 +26,7 @@ class TreeElement(BaseModel):
     id: str
     code: str | None = None
     permid: str | None = None
+    identifier: str | None = None
     type: OpenbisHierarcy | None = None
     attributes: Dict[str, Any] | None = None
     children: List['TreeElement'] | List[None] = fields.Field([])
@@ -68,6 +69,7 @@ class TreeElementObject(TreeElement):
     collection: str
     ancestors: List[str] | None = []
     descendants: List[str] | None = []
+
 
 @dataclass
 class OpenbisSampleInfo:

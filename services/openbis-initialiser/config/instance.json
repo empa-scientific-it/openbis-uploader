@@ -8,7 +8,14 @@
                     "collections": [
                         {
                             "code":"SAMPLES",
-                            "type":"DEFAULT_COLLECTION"
+                            "type":"DEFAULT_COLLECTION",
+                            "samples": [
+                                {
+                                    "type":"GENERAL_SAMPLE",
+                                    "code":"SAMP1",
+                                    "properties":{"general_sample.name":"1", "general_sample.source": "Empa", "general_sample.state":"liquid"}
+                                }
+                            ]
                         },
                         {
                             "code":"SAMPLES_PREPARATION",
@@ -16,118 +23,104 @@
                         },
                         {
                             "code": "ICP_MS_MEASUREMENTS",
-                            "type": "DEFAULT_COLLECTION",
-                            "samples": [
-                                {"type":"SAMPLE", "properties":{"sample.name":"1", "sample.source": "Empa"}}
-                            ]
+                            "type": "DEFAULT_COLLECTION"
+
                         }
                     ]
                 }
             ]
         }
     ],
-    "properties": [
-        {
-            "code": "SAMPLE_ID",
-            "label": "sample_id",
-            "description": "Id of sample",
-            "data_type": "INTEGER"
-        },
-        {
-            "code": "SAMPLE_NAME",
-            "label": "measurement_id",
-            "description": "Id of measurements",
-            "data_type": "VARCHAR"
-        },
-        {
-            "code": "INSTRUMENT_ID",
-            "label": "instrument_id",
-            "description": "Id of  ICMP-MS instrument",
-            "data_type": "VARCHAR"
-        },
-        {
-            "code": "GAS_FLOW",
-            "label": "Gas_flow",
-            "description": "Gas flow",
-            "data_type": "REAL"
-        },
-        {
-            "code": "ACQ_TIMESTAMP",
-            "label": "Acquisiton_timestamp",
-            "description": "Timestamp of acquisition",
-            "data_type": "TIMESTAMP"
-        },
-        {
-            "code": "SAMPLE_TYPE",
-            "label": "sample_type",
-            "description": "Type of ICP-MS sample",
-            "data_type": "VARCHAR"
-        },
-        {
-            "code": "VIAL_NUMBER",
-            "label": "vial_number",
-            "description": "Vial number of sample",
-            "data_type": "INTEGER"
-        },
-        {
-            "code": "ACQUISTION_RESULT",
-            "label": "acquistion_result",
-            "description": "Result of acquisition",
-            "data_type": "VARCHAR"
-        },
-        {
-            "code": "OPERATOR",
-            "label": "OPERATOR",
-            "description": "Operator of instrument",
-            "data_type": "VARCHAR"
-        
-        }
-    ],
     "collection_types": [
         {
             "code":"DEFAULT_COLLECTION",
-            "description":"DC"
+            "description":"DC",
+            "properties": [
+                {
+                    "code":"DC.DESC",
+                    "label":"Description",
+                    "description":"Description of collection",
+                    "data_type":"VARCHAR"
+                }
+            ]
         }
     ],
     "object_types": [
         {
-            "code": "SAMPLE",
+            "code": "GENERAL_SAMPLE",
             "prefix": "SAMP",
+            "description": "Sample",
             "properties": {
                 "General Information": [
                     {
-                        "code":"SAMPLE.NAME",
+                        "code":"GENERAL_SAMPLE.NAME",
                         "label": "Sample name",
                         "description": "name of sample",
                         "data_type":"VARCHAR"
                     },
                     {
-                        "code":"SAMPLE.SOURCE",
+                        "code":"GENERAL_SAMPLE.SOURCE",
                         "label": "Source of the sample",
                         "description": "Please indicate the source of the sample if known",
                         "data_type":"VARCHAR"
                     },
                     {
-                        "code":"SAMPLE.SOURCE",
-                        "label": "Source of the sample",
-                        "description": "Please indicate the source of the sample if known",
+                        "code":"GENERAL_SAMPLE.STATE",
+                        "label": "Aggregate state",
+                        "description": "Please indicate the aggregate state of the sample if known",
                         "data_type":"VARCHAR"
                     }
                 ]
             }
         },
         {
-            "code": "ICP-MS-MEASUREMENT",
-            "prefix": "ICPMS_MEAS",
+            "code": "ICPMS",
+            "prefix": "ICPMS",
             "properties": {
                 "ID":[
+                    {
+                        "code": "ICPMS.SAMPLE_NAME",
+                        "label": "Sample name",
+                        "description": "Sample name",
+                        "data_type": "VARCHAR"
+                    },
+                    {
+                        "code": "ICPMS.ACQ_TIMESTAMP",
+                        "label": "Acquisiton_timestamp",
+                        "description": "Timestamp of acquisition",
+                        "data_type": "TIMESTAMP"
+                    },
+                    {
+                        "code": "ICPMS.SAMPLE_TYPE",
+                        "label": "sample_type",
+                        "description": "Type of ICP-MS sample",
+                        "data_type": "VARCHAR"
+                    },
+                    {
+                        "code": "ICPMS.VIAL_NUMBER",
+                        "label": "vial_number",
+                        "description": "Vial number of sample",
+                        "data_type": "INTEGER"
+                    },
+                    {
+                        "code": "ICPMS.ACQUISTION_RESULT",
+                        "label": "acquistion_result",
+                        "description": "Result of acquisition",
+                        "data_type": "VARCHAR"
+                    },
+                    {
+                        "code": "ICPMS.OPERATOR",
+                        "label": "OPERATOR",
+                        "description": "Operator of instrument",
+                        "data_type": "VARCHAR"
                     
+                    }
                 ]
             }
     }
     ],
     "roles": [
-        {"user":"basi", "space":"DEMO", "role":"POWER_USER", "level":"SPACE"},
+        {"user":"basi", "space":"DEMO", "role":"POWER_USER", "level":"SPACE", "group":700},
         {"user":"baan", "space":"DEMO", "role":"POWER_USER", "level":"SPACE"}
     ]
 }

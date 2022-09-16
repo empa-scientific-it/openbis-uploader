@@ -87,7 +87,7 @@ class OpenbisRoleAssignment(OpenbisGenericObject):
     def wipe(self, ob: pybis.Openbis) -> None:
         assign = self.get_ob_object(ob)
         if assign:
-            assign.delete()
+            assign.delete("Removed")
 
     @classmethod
     def from_openbis(cls, ob: pybis.Openbis, code: str) -> Optional['OpenbisRoleAssignment']:
@@ -164,7 +164,7 @@ class OpenbisTreeObject(OpenbisGenericObject):
     perm_id: str | None = None
     parent_id: List[str] = Field(None, exclude=True)
     children: List['OpenbisTreeObject'] | List = []
-    samples: List['OpenbisSample'] | List = []
+    samples: List['OpenbisSample'] | List | None = []
     rel_in: List[str] | List = []
     rel_out: List[str] | List = []
 
@@ -222,7 +222,7 @@ class OpenbisSample(OpenbisTreeObject):
         exp_path = (collection.path() if collection is not None else None)
         sp_path = (space.path() if space is not None else None)
         proj_path = (project.path() if project is not None else None)
-        sm = ob.new_sample(self.type, experiment=exp_path, space=sp_path, project=proj_path, props = self.properties)
+        sm = ob.new_sample(self.type, code =(self.code if self.code else None), experiment=exp_path, space=sp_path, project=proj_path, props = self.properties)
         try:
             sm.save()
         except:
@@ -502,15 +502,28 @@ class OpenbisObjectType(OpenbisGenericObject):
 class OpenbisCollectionType(OpenbisGenericObject):
     code: str
     description: str
-    properties: List[str] | None = {}
+    properties: List[str] | List[OpenbisProperty] | None = []
 
     def create(self, ob: pybis.Openbis):
         ot:ExperimentType = ob.new_collection_type(code = self.code, description= self.description)
         try:  
             ot.save()
-            for prop in self.properties:
-                    ot.assign_property(prop)
-                    ot.save()
+        except ValueError:
+            ot = ob.get_collection_type(self.code)
+        breakpoint()
+        try:
+            match self.properties:
+                case str(x), *rest:
+                    for prop in self.properties:
+                            ot.assign_property(prop)
+                            ot.save()
+                case OpenbisProperty(x), *rest:
+                    for prop in self.properties:
+                        breakpoint()
+                        prop.create(ob)
+                        ob_prop = prop.get_ob_object(ob)
+                        ot.assign_property(ob_prop)
+                        ot.save()
         except:
             pass
     
@@ -618,7 +631,7 @@ class OpenbisInstance(OpenbisTreeObject, OpenbisGenericObject):
         #Reflect users
         users = [OpenbisUser(userid=ui.permId, first_name=ui.firstName, last_name=ui.lastName) for ui in ob.get_users().df.itertuples()]
         #Reflect role assignments
-        roles = [OpenbisRoleAssignment(techid=ui.techId, role=ui.role, level=ui.roleLevel, user=ui.user, space=ui.space) for ui in ob.get_role_assignments().df.itertuples()]
+        roles = [OpenbisRoleAssignment(techid=ui.techId, role=ui.role, level=ui.roleLevel, user=ui.user, space=ui.space).reflect(ob) for ui in ob.get_role_assignments().df.itertuples()]
         #Create Instance
         inst = OpenbisInstance(spaces = spaces, object_types = object_types, collection_types = collection_types, properties = property_types, users=users, roles=roles)
 
@@ -687,6 +700,11 @@ def get_non_system_entities(ob: pybis.Openbis, type:str) -> List[SampleType | Ex
             filter_registrator = True
             filter_fun = comp_selector
             exclude_codes = SACRED_SPACES
+        case "roles":
+            selector = ob.get_role_assignments
+            constructor = ob.get_role_assignment
+            attribute = 'techId'
+            filter_registrator = False
         case _:
             raise ValueError(f"Not implemented for {type}")
     entities = selector()
