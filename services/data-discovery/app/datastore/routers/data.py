@@ -19,11 +19,13 @@ from datastore.services import openbis as openbis_service
 from datastore.services import auth as auth_service
 from datastore.routers.login import get_user, oauth2_scheme, get_credential_context, get_resource_serves, get_credential_store
 from datastore.routers.openbis import  get_openbis
-from datastore.services.parsers.interfaces import OpenbisDatasetParser, ParserParameters
+from datastore.services.parsers.interfaces import OpenbisDatasetParser
 from datastore.services.parsers import icp_ms
 from instance_creator.views import OpenbisHierarcy
 from datastore.models.parser import ParserParameters
 
+import logging
+LOGGER = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/datasets")
 
@@ -134,27 +136,34 @@ async def transfer_file(params: ParserParameters, inst: files.InstanceDataStore 
     Transfers a file from the datastore
     to the openbis server
     """
-    file = inst.get_file(params.source)
+    LOGGER.info('Entered')
+    try:
+        file = inst.get_file(params.source)
+    except FileNotFoundError:
+        raise HTTPException(401, detail="The file {params.source} cannot be found")
+    if ob.is_session_active():
+        pass
+    else:
+        raise HTTPException(401, detail="Openbis section not active")
     object, collection = params.object, params.collection
     match object, collection:
         case None, str(y):
             loader = lambda files, type: ob.new_dataset(experiment = collection, type = type, file = files)
-            entity = ob.get_collection(params.collection)
         case str(x), None:
             loader = lambda files, type: ob.new_dataset(sample = object, type = type, file = files)
-            entity = ob.get_object(params.object)
         case str(x), str(y):
             raise HTTPException(401, detail='Either the sample or the collection must be specified, not both')
-    current_parser = inst.parsers[params.parser]()
-   
-    nd = loader(str(file[0]), params.dataset_type)
-    nd.kind = 'PHYSICAL'
-    trans = ob.new_transaction()
-    #trans.add(nd)
-    current_parser.process(ob, trans, nd, **params.function_parameters)
-    import pytest; pytest.set_trace()
+        case None, None:
+            raise HTTPException(401, detail='Specify a sample or a collection')
     try:
+        current_parser = inst.parsers[params.parser]()
+        nd = loader(str(file[0]), params.dataset_type)
+        nd.kind = 'PHYSICAL'
+        trans = ob.new_transaction()
+        trans = await current_parser.process(ob, trans, nd, **params.function_parameters)
+        import pytest; pytest.set_trace()
         trans.commit()
-    except ValueError as e:
+        return {"permid": nd.code}
+    except Exception as e:
         raise HTTPException(401, detail=str(e))
-    return {"permid": nd.code}
+    

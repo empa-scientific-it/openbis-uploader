@@ -193,7 +193,7 @@ def test_parser_parameters(client, token):
     pytest.set_trace()
 
 def test_icp_ms_parser(client, token):
-    body = {'source':"ICP-MS RAW.zip", 'object': '/DEMO/TEST/SAMP1', 'parser':'icp_ms', 'dataset_type':'RAW_DATA', 'function_parameters': {'loader_name':"Simone", 'description':"I added a new measurement"}}
+    body ={"object":"/DEMO/TEST/SAMP1","dataset_type":"RAW_DATA","parser":"icp_ms","source":"ICP-MS RAW.zip","function_parameters":{"loader_name":"das","description":"ad"}}
     transfer_query = client.put(f"/datasets/transfer", headers=token("all"), json=body)
     import pytest; pytest.set_trace()
 

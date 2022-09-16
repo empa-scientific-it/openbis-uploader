@@ -7,9 +7,8 @@ from pydantic.main import ModelMetaclass
 
 import inspect
 from typing import NewType
+from datastore.models.parser import FunctionParameters
 
-class ParserParameters(BaseModel):
-    pass
 
 class OpenbisDatasetParser(ABC):
     """
@@ -32,7 +31,7 @@ class OpenbisDatasetParser(ABC):
 
 
     @abstractmethod
-    def process(self, ob: Openbis, transaction: Transaction, dataset: DataSet, *args, **kwargs) -> Transaction:
+    async def process(self, ob: Openbis, transaction: Transaction, dataset: DataSet, *args, **kwargs) -> Transaction:
         """
         Abstract method to extract metadata from file and 
         register additional samples  / datasets.
@@ -52,7 +51,7 @@ class OpenbisDatasetParser(ABC):
         model = {par.name:(par.annotation, (... if par.default == inspect._empty else par.default)) for _, par in sig.parameters.items() if par.name not in excluded_names}
         model_name = f"{self.__class__.__name__}"
         full_model = {'arguments':model, 'description': self.process.__doc__}
-        p1 = ParserParameters
+        p1 = FunctionParameters
         p1.__doc__ =\
         f"""
         Class: 

@@ -7,3 +7,4 @@ python-jose[cryptography]
 passlib
 pybis
 bcrypt
+redis

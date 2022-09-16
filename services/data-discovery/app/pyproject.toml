@@ -6,6 +6,10 @@ build-backend = "setuptools.build_meta"
 pythonpath = [
   ".", "datastore"
 ]
+log_cli = true
+log_cli_level = "INFO"
+log_cli_format = "%(asctime)s [%(levelname)8s] %(message)s (%(filename)s:%(lineno)s)"
+log_cli_date_format = "%Y-%m-%d %H:%M:%S"
 env = [
     "PYTHONBREAKPOINT  = 0",
     "PYTEST_DEBUG = 1"

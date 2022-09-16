@@ -60,6 +60,7 @@ async def login_all(form_data: OAuth2PasswordRequestForm, cred_store:auth_servic
     """
     Using a single login, create a JWT token with audiences for all services
     """
+    logger.logger.info("Logging in")
     rs = resource_servers["openbis"]
     services = list(resource_servers.keys())
     token, cred = rs.login(form_data.username, form_data.password)
@@ -144,6 +145,8 @@ def get_openbis(token: str =  Depends(oauth2_scheme), resource_servers: Dict[str
     if rs.verify(token):
         ui = rs.get_user_info(token)
         return rs.openbis
+    else:
+        raise HTTPException(401, detail='Cannot verify token')
 
 
 @router.get("/{service}/me", response_model= Union[openbis_service.OpenbisUser,  ldap.LdapUser])
