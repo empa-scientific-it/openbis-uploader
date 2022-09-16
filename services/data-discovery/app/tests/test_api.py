@@ -178,6 +178,14 @@ def test_openbis(client, token):
     resp = client.get(f"/openbis/tree/", headers=token("openbis", "basi"))
     pytest.set_trace()
 
+def test_openbis_info_project(client, token):
+    resp = client.get(f"/openbis/info?", headers=token("openbis", "basi"), params={'identifier':'/DEMO/TEST', 'type':'PROJECT'})
+    pytest.set_trace()
+
+def test_openbis_info_collection(client, token):
+    resp = client.get(f"/openbis/info?", headers=token("openbis", "basi"), params={'identifier':'/DEMO/TEST/SAMPLES', 'type':'COLLECTION'})
+    pytest.set_trace()
+
 def test_transfer(client, token):
     with  tf.NamedTemporaryFile() as temp_file:
         temp_file.write(os.urandom(1024))

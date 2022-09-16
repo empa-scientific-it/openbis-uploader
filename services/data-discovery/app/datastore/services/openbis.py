@@ -22,7 +22,7 @@ class OpenbisUser(auth_models.User):
 @cache
 def get_openbis() -> pybis.Openbis:
     config = settings.get_settings()
-    return pybis.Openbis(config.openbis_server, verify_certificates=False, token=False)
+    return pybis.Openbis(config.openbis_server, verify_certificates=False, token=False, allow_http_but_do_not_use_this_in_production_and_only_within_safe_networks=True)
 
 def get_user_instance() -> pybis.Openbis:
     """
@@ -49,3 +49,8 @@ def openbis_login(username: str, password: str) -> str:
         pb.logout()
 
 
+
+def delete_all(ob: pybis.Openbis, type:str):
+    t = ob.new_transaction()
+    for s in ob.get_object(type==type):
+        t.add(s)

@@ -66,24 +66,24 @@ class ICPMsParser(OpenbisDatasetParser):
                             proj = dataset.experiment.project.identifier
                         new_exp = f"{proj}/ICP_MS_MEASUREMENTS"
                         sample = ob.new_object(type='ICPMS', code=None, props=props, experiment= new_exp)
-                        sample.save()
                         LOGGER.info(f"saved sample {sample.identifier}")
                         if dataset.sample is not None:
                             sample.set_parents(dataset.sample.identifier)
+                        transaction.add(sample)
                         #Add a dataset for each sample
                         #Because the transaction is not finished, generate sample code here
                         #import pytest; pytest.set_trace()
                                             #Find the dataset for the sample
                         subdataset_name = pl.PureWindowsPath(row.filename).name
                         mts = match_files(zf, lambda path: path.name == subdataset_name)
-                        if mts:
-                            zf_iter = zipfile.Path(zf, at=str(mts[0]) + '/' )
-                            subdataset_extract = [zf.extract(f.at, path=td)  for f in zf_iter.iterdir()]
-                            if len(subdataset_extract) > 0:
-                                LOGGER.info(subdataset_extract)
-                                subdataset = ob.new_dataset(type='RAW_DATA', code=sample.code, sample=sample.identifier, files=subdataset_extract)
-                                LOGGER.info(f"Attaching dataset to {sample.identifier}")
-                                transaction.add(subdataset)
+                        # if mts:
+                        #     zf_iter = zipfile.Path(zf, at=str(mts[0]) + '/' )
+                        #     subdataset_extract = [zf.extract(f.at, path=td)  for f in zf_iter.iterdir()]
+                        #     if len(subdataset_extract) > 0:
+                        #         LOGGER.info(subdataset_extract)
+                        #         subdataset = ob.new_dataset(type='RAW_DATA', code=sample.code, sample=sample.identifier, files=subdataset_extract)
+                        #         LOGGER.info(f"Attaching dataset to {sample.identifier}")
+                        #         transaction.add(subdataset)
                                 #subdataset.save()
                     #print(a)
         #Return the transaction with the new openbis objects (samples / collections / etc)
