@@ -72,11 +72,9 @@
     }
 
     function handleCancel(){
-        if (!cancelPrevent.value){
             formData.value = initialState();
-            emit('cancel', false)
-        }
-
+            emit('cancel', false);
+    
     }
 
     function handleTransferError(){

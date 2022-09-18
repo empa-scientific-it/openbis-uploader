@@ -23,9 +23,8 @@
     // const parserParameterInfo = ref({} as ParserParameters)
     // const selectedParams = ref({});
     const props = defineProps({
-        item: {} as TreeNode,
+        treenode: {} as TreeNode,
     })
-
 
     // interface state {
     //     selectedType: string,
@@ -90,21 +89,14 @@
 
 
 <template>
-    <table class="table table-striped">
-    <!-- <thead>
-        <tr>
-        <th>#</th>
-        <th>2018</th>
-        <th>2017</th>
-        </tr>
-    </thead> -->
-    <tbody>
-        <tr v-for="(attr,i) in current.attributes" :current="item"> 
-        <td>{{ attr }}</td>  
-        </tr>
-    </tbody>
-    </table>
-</template>
+    <form>
+        <div id="props" v-for="(attr, name) in current.properties" :current="treenode">
+            <label>{{name}}</label>
+            <input type="text" name="name" v-model="current.properties[name]">
+        </div>
+ 
+    </form>
+</template> 
 
 
 

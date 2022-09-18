@@ -4,22 +4,25 @@ from datastore.services.openbis import OpenbisUser, get_user_instance
 import pytest
 from pybis import Openbis
 
-from instance_creator.models import OpenbisTreeObject, OpenbisProject, OpenbisSample, OpenbisCollection
-from instance_creator.views import OpenbisHierarcy, TreeElement
+from instance_creator.models import OpenbisTreeObject, OpenbisProject, OpenbisSample, OpenbisCollection, OpenbisInstance, OpenbisSpace
+import instance_creator.views as ic_views
+from instance_creator.views import OpenbisHierarcy
+
+import functools
 
 router = APIRouter(prefix="/openbis")
 OpenbisTreeObject.update_forward_refs()
 
-@router.get("/tree", response_model=TreeElement)
+@router.get("/tree", response_model=ic_views.TreeElement)
 async def get_tree(ob: Openbis = Depends(get_openbis)):
-    return views.build_sample_tree_from_list(ob)
+    return ic_views.build_sample_tree_from_list(ob)
     
 @router.get('/dataset_types')
 async def get_dataset_types(ob: Openbis = Depends(get_openbis)):
     return ob.get_dataset_types().df.permId.to_list()
 
 
-@router.get('/info', response_model=OpenbisTreeObject)
+@router.get('/', response_model=OpenbisTreeObject)
 async def get_object_info(identifier: str, type: OpenbisHierarcy, ob: Openbis = Depends(get_openbis)) -> OpenbisTreeObject:
     match type:
         case OpenbisHierarcy.PROJECT:
@@ -28,5 +31,28 @@ async def get_object_info(identifier: str, type: OpenbisHierarcy, ob: Openbis = 
             return OpenbisCollection.from_openbis(ob, identifier)
         case OpenbisHierarcy.SAMPLE:
             return OpenbisSample.from_openbis(ob, identifier)
-        case _:
-            raise HTTPException(401, detail="Not implemented yes")
+        case OpenbisHierarcy.SPACE:
+            return OpenbisSpace.from_openbis(ob, identifier)
+        case OpenbisHierarcy.INSTANCE:
+            return OpenbisInstance.from_openbis(ob, identifier)
+
+@functools.lru_cache
+def get_tree(ob: Openbis) -> ic_views.TreeElement:
+    return ic_views.build_sample_tree_from_list(ob)
+
+@router.delete('/')
+async def delete(identifier: str, ob: Openbis = Depends(get_openbis)):
+    obj = get_tree(ob).find(identifier)
+    getters = {
+        'SPACE': ob.get_space,
+        'OBJECT': ob.get_object,
+        'PROJECT': ob.get_project
+    }
+    if obj:
+        try:
+            ob_obj = getters[obj.type.value](identifier)
+            ob_obj.delete("User requested")
+        except Exception as e:
+            raise HTTPException(401, detail=e)
+    else:
+        raise HTTPException(401, detail=f'No object with identifier {identifier}')

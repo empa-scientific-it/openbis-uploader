@@ -16,7 +16,8 @@
 
   const emit = defineEmits<{
     (event: 'dropped', target: string): void,
-    (event: 'selected', element: TreeNode): void
+    (event: 'selected', element: TreeNode): void,
+    (event: 'delete', element: TreeNode)
   }>();
 
   // Open the tree root
@@ -48,6 +49,15 @@
     emit('selected', e);
   }
 
+  function handleDelete(){
+    emit('delete', props.model)
+  }
+
+  function handleDeleted(e){
+    console.log(`Handler Currently in ${props.model.identifier}`);
+    console.log(`Message from ${e.identifier}`)
+    emit('delete', e)
+  }
 
   const valid_for_upload = ['COLLECTION', 'OBJECT']
 
@@ -75,11 +85,12 @@
 <template>
   <li class="tree" @dragover.prevent @dragenter.prevent>
         <div class="node" @click="toggle"  @drop="handleDrop" @dragover.prevent @dragenter.prevent> 
+            <span class="bi bi-file-minus" @click="handleDelete"></span>
             <span><i :class="itemIcon"></i></span>
             <a>{{ model.code }}</a>
         </div>
     <ul v-show="isOpen" v-if="isFolder" >
-      <TreeItem class="tree" v-for="model in model.children" :model="model" @dropped="handleDropped" @selected="handleSelected">
+      <TreeItem class="tree" v-for="model in model.children" :model="model" @dropped="handleDropped" @selected="handleSelected" @delete="handleDeleted">
       </TreeItem>
     </ul>
   </li>
@@ -94,7 +105,7 @@
 }
 
 ul .tree {
-  padding-left: 0.1%;
+  padding-left: 0.05%;
   margin: 0px 0;
 }
 

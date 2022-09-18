@@ -128,7 +128,7 @@ export async function getProperties(headers: HeadersInit, identifier: string, ty
     const param_string = new URLSearchParams();
     param_string.append('identifier', identifier);
     param_string.append('type', type);
-    const req =  new Request(`${apiPath}/openbis/info?` + param_string.toString(), {method: 'GET', headers: headers});
+    const req =  new Request(`${apiPath}/openbis/?` + param_string.toString(), {method: 'GET', headers: headers});
     const response = await fetch(req);
     const body = await response.json();
     if (response.ok){
@@ -151,6 +151,21 @@ export async function  getFiles(headers: HeadersInit, pattern: string): Promise<
     }
 }
 
+
+export async function deleteObject(headers: HeadersInit, identifier: string) {
+    const param_string = new URLSearchParams();
+    param_string.append('identifier', identifier)
+    const req =  new Request(`${apiPath}/openbis/?` + param_string.toString(), {method: 'DELETE', headers: headers});
+    console.log(req)
+    const response = await fetch(req);
+    const body = await response.json();
+    if (response.ok){
+        return body
+    }else{
+        const error = new Error(response.statusText);
+        throw(error);  
+    }
+}
 
 function transferBody(fileId: string, targetId: string, datasetType: string, targetType: OpenbisObjectTypes, parser: string, parameters: object): object
 {

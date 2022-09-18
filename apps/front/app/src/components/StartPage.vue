@@ -61,6 +61,7 @@
       showPopup.value = !showPopup.value;
       await openbis.updateTree();
     }
+
     function handleCancel(ev){
       showPopup.value = !showPopup.value;
     }
@@ -73,8 +74,14 @@
       await openbis.updateTree()
     }
 
-    function handleSelectedTreeNode(tn: TreeNode) {
+    async function handleSelectedTreeNode(tn: TreeNode) {
       current.value = tn;
+      console.log(current.value);
+      await openbis.getAttributes();
+    }
+
+    async function handleDelete(tn: TreeNode){
+        await openbis.delete(tn);
     }
 
 
@@ -88,22 +95,21 @@
       <h1>OpenBIS Dataset Uploader</h1>
     </div>
     <div class="menu">
-      <h2>Openbis Tree</h2>
-      <ul>
-        <TreeItem class="item" :model="tree" @dropped="handleFileDropped" @click="updateCurrentTree" @selected="handleSelectedTreeNode"></TreeItem>
-      </ul>
-    </div>
-    <div class="right">
-      <h2>Openbis Tree</h2>
-      <ul>
-        <ObjectInfo  :item="current"></ObjectInfo>
-      </ul>
-    </div>
-    <div class="main">
       <h2>Files on Datastore</h2>
       <FileList @moved="handleFileMoved" @dropped="handleUploadToDatastore"></FileList>
     </div>
-    <div></div>
+    <div class="main">
+      <h2>Openbis Tree</h2>
+      <ul>
+        <TreeItem class="item" :model="tree" @dropped="handleFileDropped" @click="updateCurrentTree" @selected="handleSelectedTreeNode" @delete="handleDelete"></TreeItem>
+      </ul>
+    </div>
+    <div class="right">
+      <h2>Object Info</h2>
+      <ul>
+        <ObjectInfo  :treenode="current"></ObjectInfo>
+      </ul>
+    </div>
   <UploadPrompt :show="showPopup" @cancel="handleCancel" @save="handleTransfer" :file="selected" :dest="current"></UploadPrompt>
 </div>
 </template>
@@ -141,6 +147,7 @@
     'title title title' 
     'menu main right '
     'footer main right';
+  grid-template-columns: repeat(auto-fit,30%);
   gap: 2%;
   background-color: #FFFF;
   padding: 1%;
@@ -148,12 +155,12 @@
 
 grid-item {
   display: grid;            /* new */
-  align-items: left;      /* new */
-  justify-items: center;    /* new */
-  align-self: stretch;
+  align-items: start;      /* new */
+  justify-items: start;    /* new */
+  align-self: normal;
 }
 
-.header { display: grid-item; grid-area: header; justify-content: start; }
+.header { display: grid-item; grid-area: header; justify-content: start; align-content: right; }
 .title {display: grid-item; grid-area: title;}
 .menu { display: grid-item; grid-area: menu;}
 .main { display: grid-item; grid-area: main;}

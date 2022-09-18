@@ -6,7 +6,7 @@ export interface TreeNode {
     code: string  | void
     perm_id: string | void
     children: TreeNode[] | void 
-    attributes: {}
+    properties: {}
 }
 
 export const enum OpenbisObjectTypes{

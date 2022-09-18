@@ -1,12 +1,18 @@
 
-
 <template>
-  <router-view />
-  <!-- <div id="app">Welcome to the openBIS dataset uploader</div> -->
+    <router-view />
 </template>
 
 <script setup lang="ts">
-console.log("App")
+  import {useUser} from "@/stores/login";
+  import {onBeforeMount} from 'vue';
+  console.log("App")
+  onBeforeMount( async () => {
+    const store = useUser();
+    await store.init();
+    console.log(store)
+})
+ 
 </script>
 
 

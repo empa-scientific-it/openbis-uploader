@@ -145,6 +145,10 @@ def test_login_all(client: TestClient, login_data):
     assert (resp_ob.status_code == 200) & (resp_ldap.status_code == 200)
 
 
+def test_logout_all(client: TestClient, token):
+    resp_ob = client.get("/authorize/all/logout", headers=token('all', 'basi'))
+    assert (resp_ob.status_code == 200)
+
 def test_token_validation(client: TestClient, login_data):
     token_req = client.post("/authorize/all/token", data=login_data("all"))
     token_resp = token_req.json()['access_token']
@@ -182,8 +186,16 @@ def test_openbis_info_project(client, token):
     resp = client.get(f"/openbis/info?", headers=token("openbis", "basi"), params={'identifier':'/DEMO/TEST', 'type':'PROJECT'})
     pytest.set_trace()
 
+def test_openbis_info_space(client, token):
+    resp = client.get(f"/openbis/info?", headers=token("openbis", "basi"), params={'identifier':'/DEMO/', 'type':'SPACE'})
+    pytest.set_trace()
+
 def test_openbis_info_collection(client, token):
     resp = client.get(f"/openbis/info?", headers=token("openbis", "basi"), params={'identifier':'/DEMO/TEST/SAMPLES', 'type':'COLLECTION'})
+    pytest.set_trace()
+
+def test_openbis_delete(client, token):
+    resp = client.delete(f"/openbis/?", headers=token("openbis", "basi"), params={'identifier':'/DEMO/TEST/SAMP1'})
     pytest.set_trace()
 
 def test_transfer(client, token):

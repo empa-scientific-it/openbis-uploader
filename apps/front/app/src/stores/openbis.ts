@@ -14,7 +14,7 @@ interface OpenbisTreeState{
 export const useOpenbis = defineStore('openbis', 
 {
     state:  () => {
-        const ct = {identifier: '/', type: 'INSTANCE', children: []} as TreeNode
+        const ct = {identifier: '/', type: 'INSTANCE', children: [], properties: {}} as TreeNode
         return {
             tree: ct,
             current: ct,
@@ -48,6 +48,16 @@ export const useOpenbis = defineStore('openbis',
             await this.updateTree();
             await this.getDatasetTypes();
             await this.getParsers();
+        },
+        async getAttributes(): Promise<void>{
+            const tok = await bearerHeaderAuth();
+            const attr = await DropBox.getProperties(tok, this.current.identifier, this.current.type);
+            this.current.properties = attr?.properties;
+        },
+        async delete(tn: TreeNode){
+            const tok = await bearerHeaderAuth();
+            await DropBox.deleteObject(tok, tn.identifier);
+            await this.updateTree();
         }
 
     }
