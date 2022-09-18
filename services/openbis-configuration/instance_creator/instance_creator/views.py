@@ -12,6 +12,7 @@ from . import utils
 
 class OpenbisHierarcy(enum.Enum):
     OBJECT = "OBJECT"
+    SAMPLE = "OBJECT"
     COLLECTION = "COLLECTION"
     PROJECT = "PROJECT"
     SPACE = "SPACE"
@@ -23,17 +24,16 @@ class TreeElement(BaseModel):
     """
     A class to (recursively) represent a tree element
     """
-    id: str
+    identifier: str
     code: str | None = None
     permid: str | None = None
-    identifier: str | None = None
     type: OpenbisHierarcy | None = None
     attributes: Dict[str, Any] | None = None
     children: List['TreeElement'] | List[None] = fields.Field([])
     openbis_type: str | None = None
 
     def children_ids(self) -> List[str]:
-        return [el.id for el in self.children] 
+        return [el.identifier for el in self.children] 
     
     def get(self, id: str) -> Optional['TreeElement']:
         if id in self.children_ids():
@@ -42,7 +42,7 @@ class TreeElement(BaseModel):
             pass
 
     def push(self, el: 'TreeElement'):
-        if el.id not in self.children_ids():
+        if el.identifier not in self.children_ids():
             self.children.append(el)
         else:
             pass
@@ -50,7 +50,7 @@ class TreeElement(BaseModel):
     def find(self, id: str) -> Optional['TreeElement']:
         result = []
         def inner_search(start: TreeElement, id: Str):
-            if start.id == id:
+            if start.identifier == id:
                 return start
             else:
                 els =  [x for x in [inner_search(child, id) for child in start.children] if x is not None]
@@ -130,33 +130,33 @@ def tree_builder(paths: List[OpenbisSampleInfo]) -> TreeElement:
                 if x in res.children_id():
                     return
                 else:
-                    res.push(TreeElement(id=x, children=[], type=path_type))
+                    res.push(TreeElement(identifier=x, children=[], type=path_type))
             case str(x), *rest:
                 if x not in res.children_ids():
-                    res.push(TreeElement(id=x, children=[],  type=path_type))
+                    res.push(TreeElement(identifier=x, children=[],  type=path_type))
                 recurse_setdefault(rest, res.get(x))
-    tree = TreeElement(id='/', children = [], type=OpenbisHierarcy.INSTANCE)
+    tree = TreeElement(identifier='/', children = [], type=OpenbisHierarcy.INSTANCE)
     for p in paths:
         recurse_setdefault(p.identifier, tree)
     return tree
 
 
 def build_sample_tree_from_list(ob: pybis.Openbis) -> TreeElement:
-    base_tree = TreeElement(id='/', code='/', type=OpenbisHierarcy.INSTANCE)
+    base_tree = TreeElement(identifier='/', code='/', type=OpenbisHierarcy.INSTANCE)
     #Add spaces
     for space in ob.get_spaces().df.itertuples():
-        base_tree.push(TreeElement(id=space.code, code=space.code, permid=space.code, type=OpenbisHierarcy.SPACE))
+        base_tree.push(TreeElement(identifier=space.code, code=space.code, permid=space.code, type=OpenbisHierarcy.SPACE))
     #Add projects
     for proj in ob.get_projects():
-        base_tree.get(id=proj.space.code).push(TreeElement(id=proj.identifier, code=proj.code, permid=proj.permId, type=OpenbisHierarcy.PROJECT))
+        base_tree.get(id=proj.space.code).push(TreeElement(identifier=proj.identifier, code=proj.code, permid=proj.permId, type=OpenbisHierarcy.PROJECT))
     #Add collections
     for coll in ob.get_collections(attrs=['project', 'space', 'code', 'type']).df.itertuples():
-        base_tree.get(coll.space).get(coll.project).push(TreeElement(id=coll.identifier, code=coll.code, permid=coll.permId, type=OpenbisHierarcy.COLLECTION, openbis_type=coll.type))
+        base_tree.get(coll.space).get(coll.project).push(TreeElement(identifier=coll.identifier, code=coll.code, permid=coll.permId, type=OpenbisHierarcy.COLLECTION, openbis_type=coll.type))
     #Add objects
     for samp in ob.get_objects(attrs=['project', 'space', 'code', 'experiment', 'type', "children", 'parents']).df.itertuples():
         proj = base_tree.find(samp.project)
         if proj:
-            proj.push(TreeElementObject(id=samp.identifier, code=samp.code, permid=samp.permId, 
+            proj.push(TreeElementObject(identifier=samp.identifier, code=samp.code, permid=samp.permId, 
             collection=samp.experiment, type=OpenbisHierarcy.OBJECT, openbis_type=samp.type, ancestors=samp.parents, descendants=samp.children))
     return base_tree
 

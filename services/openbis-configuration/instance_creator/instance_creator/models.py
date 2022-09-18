@@ -162,16 +162,19 @@ class OpenbisTreeObject(OpenbisGenericObject):
     """
     code: str | None = None
     perm_id: str | None = None
-    parent_id: List[str] = Field(None, exclude=True)
+    parent_id: List[str] | None = Field(None, exclude=True)
     children: List['OpenbisTreeObject'] | List = []
     samples: List['OpenbisSample'] | List | None = []
     rel_in: List[str] | List = []
     rel_out: List[str] | List = []
+    properties: Dict[str, Any] | List['OpenbisProperty'] = None
+     
 
-    def path(self) -> str:
-        els = [el for el in self.parent_id if el is not None] + [(self.code if self.code is not None else '')]
+    def path(self) -> str | None:
+        if self.parent_id:
+            els = [el for el in self.parent_id if el is not None] + [(self.code if self.code is not None else '')]
 
-        return str(pl.PurePath(*els))
+            return str(pl.PurePath(*els))
     
     def get_child(self, code: str) -> Optional['OpenbisTreeObject']:
         if self.children:
@@ -247,7 +250,7 @@ class OpenbisSample(OpenbisTreeObject):
             space=item.space.code, 
             type=item.type.code,
             registrator=item.registrator,
-            properties = item.props.all_nonempty()
+            properties = item.props.all()
             )
         return obj
 
@@ -278,7 +281,7 @@ class OpenbisSample(OpenbisTreeObject):
 
     def reflect(self, ob: pybis.Openbis) -> 'OpenbisSample':
         obj = self.get_ob_object(ob)
-        return OpenbisSample(code=obj.code, type=obj.type.code, perm_id=obj.permId, experiment=obj.collection.code, properties=obj.props.all_nonempty())
+        return OpenbisSample(code=obj.code, type=obj.type.code, perm_id=obj.permId, experiment=obj.collection.code, properties=obj.props.all())
 
 
 
@@ -327,7 +330,14 @@ class OpenbisCollection(OpenbisTreeObject):
         coll = ob.get_collection(code)
         #children = [OpenbisSample.from_openbis(ob, ch.identifier) for ch in coll.get_objects().df.itertuples()]
         children = []
-        return cls(code=coll.code, identifier=coll.identifier, perm_id=coll.permId, type=coll.type.code, samples=children, registrator=coll.registrator, properties=coll.props.all())
+        return cls(
+            code=coll.code, 
+            identifier=coll.identifier, 
+            perm_id=coll.permId, 
+            type=coll.type.code, 
+            samples=children, 
+            registrator=coll.registrator, 
+            properties=coll.props.all())
     
     def reflect(self, ob: pybis.Openbis) -> 'OpenbisCollection': 
         pass
@@ -362,7 +372,13 @@ class OpenbisProject(OpenbisTreeObject):
     def from_openbis(cls, ob: pybis.Openbis, code: str):
         pr = ob.get_project(projectId=code)
         colls = [OpenbisCollection.from_openbis(ob, c.identifier) for c in  pr.get_collections().df.itertuples()]
-        return cls(code=pr.code, perm_id=pr.permId, identifier=pr.identifier, space=pr.space.code, registrator=pr.registrator, collections=colls)
+        return cls(code=pr.code, 
+        perm_id=pr.permId, 
+        identifier=pr.identifier, 
+        space=pr.space.code,
+        registrator=pr.registrator, 
+        collections=colls,
+        properties={'leader': pr.leader, 'description': pr.description})
 
     def reflect(self, ob: pybis.Openbis) -> 'OpenbisProject':
         sp = self.get_ob_object(ob)
@@ -376,6 +392,7 @@ class OpenbisSpace(OpenbisTreeObject):
     code: str
     children: List[OpenbisProject] | None = Field(None, alias='projects')
     samples: List['OpenbisSample'] | None = None
+    properties: None = None
 
     def create(self, ob: pybis.Openbis):
         #Create space
@@ -398,7 +415,7 @@ class OpenbisSpace(OpenbisTreeObject):
 
     @classmethod
     def from_openbis(cls, ob: pybis.Openbis, code: str) -> 'OpenbisSpace':
-        sp = ob.get_space(code)
+        sp = ob.get_space(code.replace('/',''))
         if sp:
             projects = sp.get_projects()
             if projects:
@@ -510,7 +527,6 @@ class OpenbisCollectionType(OpenbisGenericObject):
             ot.save()
         except ValueError:
             ot = ob.get_collection_type(self.code)
-        breakpoint()
         try:
             match self.properties:
                 case str(x), *rest:
@@ -519,7 +535,6 @@ class OpenbisCollectionType(OpenbisGenericObject):
                             ot.save()
                 case OpenbisProperty(x), *rest:
                     for prop in self.properties:
-                        breakpoint()
                         prop.create(ob)
                         ob_prop = prop.get_ob_object(ob)
                         ot.assign_property(ob_prop)
@@ -559,7 +574,8 @@ class OpenbisDatasetType(OpenbisGenericObject):
 
 class OpenbisInstance(OpenbisTreeObject, OpenbisGenericObject):
     code: str = '/'
-    children: List[OpenbisSpace] = Field([], alias='spaces') 
+    parent_id: None = None
+    children: List[OpenbisSpace] |  None  = Field([], alias='spaces') 
     object_types: List[OpenbisObjectType] | None = None
     collection_types: List[OpenbisCollectionType] | None = None
     properties: List[OpenbisProperty] | None = None
@@ -600,8 +616,9 @@ class OpenbisInstance(OpenbisTreeObject, OpenbisGenericObject):
         for prop in self.properties:
             prop.wipe(ob)
 
-
-    
+    @classmethod
+    def from_openbis(cls, ob: pybis.Openbis, code: str):
+        return cls(code='/',properties={})
 
     def export(self, path: pl.Path):
         """
