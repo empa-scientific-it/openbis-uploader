@@ -12,7 +12,7 @@ function bearer(token: String): HeadersInit {
 
 async function bearerHeaderAuth(): Promise<HeadersInit> {
     const user = useUser();
-    if(user.loggedIn && user?.sessionToken &&  await user?.tokenValid()){
+    if(user?.sessionToken &&  await user?.tokenValid()){
         return bearer(user.sessionToken)
     }else
     {

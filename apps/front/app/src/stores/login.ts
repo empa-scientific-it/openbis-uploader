@@ -15,7 +15,7 @@ function storeToken(token : sessionToken){
     localStorage.setItem("token", JSON.stringify(token));
 }
 
-function getToken(): sessionToken | void {
+function getToken(): sessionToken | null {
     const token = JSON.parse(localStorage.getItem("token"));
     return token
 }
@@ -24,52 +24,61 @@ function deleteToken(token: sessionToken){
     localStorage.removeItem("token");
 }
 
-async function existingSession(token: sessionToken | void): Promise<boolean>{
-    if (token != undefined){
-        if ((token.token !== undefined)){
-            return await DropBox.checkToken(token.token);
-        }
-    }
-    else{
-        return false;
-    }
+async function isSessionValid(token: string): Promise<boolean>{   
+    return await DropBox.checkToken(token)
 }
+
 
 interface State {
-    user: string
-    sessionToken: string
+    user: string | void
+    sessionToken: string | void
     loggedIn: boolean
-    instance: string
 }
 
+
+function initalState(): State{
+    return {
+        user: null,
+        sessionToken: null,
+        loggedIn: false,
+    } as State
+}
 
 
 // Store for user information
 export const useUser = defineStore('login', 
 {
-    state:  (): State =>  {
-       
-        const token = getToken();
-        //const exists = (async () => await existingSession(token))();
-        const exists = false;
-        if (exists && token != undefined){
-            return {
-                user: token.user,
-                sessionToken: token.token,
-                loggedIn: true,
-                instance: ''
-            } 
-        }
-        else{
-            return {
-                user: '',
-                sessionToken: '',
-                loggedIn: false,
-                instance: ''
-            } 
-        }
+    state: (): State =>  {
+        return initalState();
     },
     actions: {
+        async init(){
+            const token = getToken();
+            if (!(token == null)){
+                try{
+                    const valid = await isSessionValid(token?.token);
+                    if(valid){
+                        this.sessionToken = token.token;
+                        this.user = token.user;
+                        this.loggedIn = true;
+                        return
+                    }else{
+                        this.$patch(initalState())
+                        return
+                    }
+    
+                }
+                catch(error){
+                    alert(error)
+                    this.$patch(initalState())
+                    return
+    
+                }
+            }else{
+                this.$patch(initalState())
+                return
+            }
+        },
         async  login(user:string, password:string): Promise<boolean> {
             try{
                 const token = await DropBox.login(user, password);
@@ -96,10 +105,10 @@ export const useUser = defineStore('login',
             try{
                 const done = await DropBox.logout(this.sessionToken);
                 if(done){
-                    this.user = '';
-                    this.sessionToken = '';
+                    this.user = null;
+                    this.sessionToken = null;
                     this.loggedIn = false;
-                    deleteToken(this.sessionToken);
+                    deleteToken({user: this.user, token: this.sessionToken});
                     return true
                 }else{
                     return false

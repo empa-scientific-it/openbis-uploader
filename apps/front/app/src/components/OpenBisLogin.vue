@@ -1,21 +1,3 @@
-<template>
-  <div class="login" @submit.prevent="onSubmit">
-        <form novalidate>
-            <h3>Sign in to OpenBIS instance</h3>
-            <div class="row">
-                <label for="user">Username</label>
-                <input type="text" v-model="user" id="user" />
-            </div>
-            <div class="row">
-                <label for="password">Password</label>
-                <input type="password" v-model="password"  id="password"/>
-            </div>
-        </form>
-        <div class="row">
-              <button type="submit" class="btn btn-dark btn-lg btn-block" @click="onSubmit">Sign In</button>
-        </div>
-  </div>
-</template>
 
 <script setup lang="ts">
   import { useUser } from '@/stores/login';
@@ -31,12 +13,38 @@
   const router = useRouter();
   
   async function onSubmit(ev: Event){
-    const success = await store.login(user.value, password.value);
-    if(success){
+    try{
+      const success = await store.login(user.value, password.value);
+      if(success){
       router.push({'name':"eln"});
+    }
+    }catch(e){
+      alert(e)
     }
   }
 </script>
+
+
+<template>
+  <div class="login" @submit.prevent="onSubmit">
+        <form novalidate>
+            <h3>Sign in to OpenBIS instance</h3>
+            <div class="row">
+                <label for="user">Username</label>
+                <input type="text" v-model="user" id="user" />
+            </div>
+            <div class="row">
+                <label for="password">Password</label>
+                <input type="password" v-model="password"  id="password"/>
+            </div>
+            <div class="row-btn">
+              <button type="submit" class="btn btn-dark btn-lg btn-block" @click="onSubmit">Sign In</button>
+            </div>
+        </form>
+
+  </div>
+</template>
+
 
 <style>
 
@@ -65,6 +73,9 @@ form
     text-align: left;
 }
 
+div.form .row-btn{
+  display: inline-block;
+}
 
 
 </style>

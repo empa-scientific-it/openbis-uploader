@@ -47,12 +47,12 @@ export async function logout(token: string): Promise<boolean> {
 
 export async function  checkToken(token: string): Promise<boolean>{
     const base = `${apiPath}/authorize/all/check?`
-    const params = new  URLSearchParams({token: JSON.stringify(token)})
+    const params = new  URLSearchParams({token: token})
     const req =  new Request( base + params.toString(), {method: 'GET'});
     const response = await fetch(req);
     const body = await response.json();
     if (response.ok){
-        return body
+        return body.valid
     }else{
         const error = new Error(response.statusText);
         throw(error);  
@@ -118,6 +118,21 @@ export async function  getParserParameters(headers: HeadersInit, parser: string)
     const body = await response.json();
     if (response.ok){
         return (body as ParserParameters);
+    }else{
+        const error = new Error(response.statusText);
+        throw(error);  
+    }
+}
+
+export async function getProperties(headers: HeadersInit, identifier: string, type: OpenbisObjectTypes) {
+    const param_string = new URLSearchParams();
+    param_string.append('identifier', identifier);
+    param_string.append('type', type);
+    const req =  new Request(`${apiPath}/openbis/info?` + param_string.toString(), {method: 'GET', headers: headers});
+    const response = await fetch(req);
+    const body = await response.json();
+    if (response.ok){
+        return body
     }else{
         const error = new Error(response.statusText);
         throw(error);  

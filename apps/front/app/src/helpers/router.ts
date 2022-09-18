@@ -1,6 +1,7 @@
-import {useUser, existingSession} from "@/stores/login"
+import {useUser} from "@/stores/login"
 import {createRouter, createWebHistory ,  RouteRecordRaw } from 'vue-router'
-
+import { storeToRefs } from "pinia";
+import { objectToString } from "@vue/shared";
 
 const routes: Array<RouteRecordRaw> = [
   { 
@@ -21,15 +22,18 @@ const router = createRouter({
 
 
 
+
 // Routing guard redirecting to login
 // if the user is not logged
 router.beforeEach((to, from) => {
   const store = useUser();
-  console.log(store.loggedIn)
-  if (((to.matched.some((record) => record.meta.requiresAuth)) && !store.loggedIn) && to.name != "login"){
+  const {user, sessionToken, loggedIn} = storeToRefs(store)
+  debugger
+  if (((to.matched.some((record) => record.meta.requiresAuth)) && !loggedIn.value) && to.name != "login"){
       return {name: "login"}
   }
-});
+}
+);
 
 
 export {router};
