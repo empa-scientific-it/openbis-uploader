@@ -36,21 +36,31 @@ The frontend should also be served by a webserver, it allows the user to interac
 
 
 ### Services
-The tools uses the following services, deployed as docker containers (the names given below  in **boldface** correspond to the names in the docker compose file [here](docker-compose.yml)):
+The tool is built upon a series of services, deployed as docker containers (the names given below  in **boldface** correspond to the names in the docker compose file [here](docker-compose.yml)). In most cases, the configuration / source code of the services is mounted to their corresponding directory using a bind mount, so that interactive development from outside the container is possible easily. For the location of the bind mounts, look at the corresponding `volumes` section for each service.
 
 - **openbis** 
 
-    This service provides a pre-configured openbis instance whith ldap login configured; the authentication is made using the **ldap** service. 
-    The instance is populated at runtime with default object and structures by the **openbs-initialiser** ephermeral service. 
+    This service provides a pre-configured openbis instance whith ldap login configured; the authentication is made using the **ldap** service.   This is defined throught [`service.properties`](./services/openbis/service.properties) and [`groups.json`](./services/openbis/groups.json) 
+
+    The instance is populated at runtime with default object and structures by the **openbs-initialiser** ephermeral service. The instance configuration is in [`instance.json`](./services/openbis-initialiser/config/instance.json)
 
 - **data-discovery**
 
     This service provides the REST API which acts as the sole entrypoint for all operations on the file staging area, the dataset ingestion and the communication with openbis. This services depends on the **cache** service, which provides a redis instance used for login invalidation. As configured by default, 
-    this service connnect to the openbis instance **openbis**. An external instance can be configured by changing the  
+    this service connnect to the openbis instance **openbis**. An external instance can be configured by changing the  `OPENBIS_SERVER` env variable in the docker service definition. The container can be reached from outside the docker compose network at https://localhost:8080
 
+- **ldap**
     
-- ldap
-- cache
+    This is the LDAP service used by the openbis service and by the backend server for authentication. The user and group configuration can be changed by editing the [`test_users.ldif`](./services/ldap/test_users.ldif) file.
+
+- **cache**
+
+    This is the redis in-memory store service which is used as an authentication cache for **data-discovery** and as a message queue to manage dataset ingestion scripts
+
+- **frontend**
+
+    This is the vue.js frontend app, which is served by Vite. It can be reached at https://localhost:8000.
+    It accesses the backend service at **data-discovery** using a reverse proxy. The proxy is configured in [`vite.config.js`](./apps/front/app/vite.config.js). 
 
 
 ## Structure of the repository
