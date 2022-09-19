@@ -35,13 +35,37 @@ The backend is meant to run on a server (later it will be probabily hosted by EM
 The frontend should also be served by a webserver, it allows the user to interact with the above functionalities in an easy manner.
 
 
+### Concept drawing
+
+#### Traditional Jython dropbox
+
+The following diagram shows the architecture of the current Jython/Java data ingestion solution:
+The users / the device place data in the `N:` folder; the datamover script transfers it to the ETH DSS store in the dropbox landing area. When a new dataset is detected, the corresponding dropbox plugin is triggered. This plugin receives the datasets to be attached as well as an OpenbisBIS transaction. Using these inputs, the plugin can create new openbis samples, attach medatata, attach the ingested metadata etc. When the work is done, the transaction is commited. By operating inside of a transaction, the work is atomic: if anything during the processing goes wrong, the entire transaction is rolled back leaving the instance clean.
+
 ```mermaid
-graph TD;
-  A-->B;
-  A-->C;
-  B-->D;
-  C-->D;
+flowchart TB
+    subgraph ETH
+    DSS <--> AS
+    DSS--> store
+    Proxy --> AS
+    Proxy --> DSS
+    subgraph DSS
+    dropbox-plugin
+    end
+    subgraph store
+        Dropboxes
+        Workspace
+    end
+    end
+    subgraph EMPA
+    user --> N:
+    N: --> Datamover
+    Datamover --> Dropboxes
+    end
+
 ```
+
+#### New User-defined dropbox
 
 
 ### Services
