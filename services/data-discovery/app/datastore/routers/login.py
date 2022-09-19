@@ -116,13 +116,15 @@ async def check_token(service: str, token: str, cred_store:auth_service.Credenti
 
 
 @router.get("/all/logout")
-async def logout_all(token: str =  Depends(oauth2_scheme),  resource_servers: Dict[str, auth_service.ResourceServer] = Depends(get_resource_serves)):
-    for serv in resource_servers.keys():
-        await logout_single(serv, token)
+async def logout_all(token: str =  Depends(oauth2_scheme),  resource_servers: Dict[str, auth_service.ResourceServer] = Depends(get_resource_serves), cred_store:auth_service.CredentialsStore = Depends(get_credential_store)):
+    for serv_name, serv in resource_servers.items():
+        serv.logout(token)
+        cred_store.remove(token, serv_name)
     return  {"logged out": token}
 
 @router.get("/{service}/logout")
 async def logout_single(service: str, token: str =  Depends(oauth2_scheme), cred_store:auth_service.CredentialsStore = Depends(get_credential_store), resource_servers: Dict[str, auth_service.ResourceServer] = Depends(get_resource_serves)):
+    import pytest; pytest.set_trace()
     rs = resource_servers[service]
     rs.logout(token)
     cred_store.remove(token, service)

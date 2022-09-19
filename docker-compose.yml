@@ -1,4 +1,17 @@
 version: "3.9"
+volumes:
+  dropboxes:
+    driver: local
+    driver_opts:
+      o: bind
+      type: none
+      device: /home/basi/dropboxes
+  # openbis-state:
+  #   driver: local
+  #   driver_opts:
+  #     o: bind
+  #     type: none
+  #     device: /home/basi/openbis-state
 services:
   data-discovery:
     build: 
@@ -6,7 +19,7 @@ services:
       dockerfile: ./data-discovery/Dockerfile
     volumes:
       - ./services/data-discovery/app:/app/
-      - ~/datastores/:/shares/
+      -  dropboxes:/shares/
       - ./services/openbis-configuration/instance_creator:/instance_creator/
     hostname: data-discovery
     ports:
@@ -24,7 +37,18 @@ services:
       - OPENBIS_SERVER=https://openbis:443
       - JWS_SECRET_KEY=72f0337b7a0ba5efc612af93bd75e5ff305e329acee0cfa57bd15b843b5789f3
       - CREDENTIALS_STORAGE_KEY=428c9416c004ea21fcfe3480d3b84d92306784bea452d3a249cdcf9e6250eeb8
-
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_PASSWORD=eYVX7EwVmmxKPCDmwMtyKVge8oLd2t81
+  cache:
+    image: redis:6.2-alpine
+    restart: always
+    ports:
+      - '6379:6379'
+    command: redis-server --save 20 1 --loglevel warning --requirepass eYVX7EwVmmxKPCDmwMtyKVge8oLd2t81
+    volumes: 
+      - ./builds/cache:/data
+    hostname: redis
     
   ldap:
     image: bitnami/openldap:latest
@@ -56,9 +80,11 @@ services:
       - CORE_PLUGINS=enabled-modules = dataset-uploader, dataset-file-search, xls-import, eln-lims, openbis-ng-ui, search-store, user-management-maintenance
     volumes:
       - ./services/openbis/service.properties:/home/openbis/openbis_state/as_etc/service.properties
-      - ./services/openbis/dss_service.properties:/home/openbis/openbis_state/ds_etc/service.properties
+      #- ./services/openbis/dss_service.properties:/home/openbis/openbis_state/dss_etc/service.properties
       - ./services/openbis/groups.json:/home/openbis/openbis_state/as_etc/groups.json
+      #- dropboxes:/home/openbis/openbis_state/dss_store/eln-lims-dropbox-marker/
       - ./builds/openbis/:/home/openbis/openbis_state/
+
     ports:
       - "8443:443"
     hostname: openbis
@@ -83,7 +109,6 @@ services:
       - OPENBIS_PORT=443
       - OPENBIS_ADMIN_USER=admin
       - OPENBIS_ADMIN_PASSWORD=changeit
-
   frontend:
     build: 
       context: ./apps/front
