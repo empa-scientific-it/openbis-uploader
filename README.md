@@ -35,6 +35,15 @@ The backend is meant to run on a server (later it will be probabily hosted by EM
 The frontend should also be served by a webserver, it allows the user to interact with the above functionalities in an easy manner.
 
 
+```mermaid
+graph TD;
+  A-->B;
+  A-->C;
+  B-->D;
+  C-->D;
+```
+
+
 ### Services
 The tool is built upon a series of services, deployed as docker containers (the names given below  in **boldface** correspond to the names in the docker compose file [here](docker-compose.yml)). In most cases, the configuration / source code of the services is mounted to their corresponding directory using a bind mount, so that interactive development from outside the container is possible easily. For the location of the bind mounts, look at the corresponding `volumes` section for each service.
 
