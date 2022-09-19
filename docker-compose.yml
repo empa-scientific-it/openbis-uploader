@@ -1,5 +1,7 @@
 version: "3.9"
 volumes:
+  #These correspond to the N: folders where
+  #the user can place the data to upload
   dropboxes:
     driver: local
     driver_opts:
@@ -65,12 +67,7 @@ services:
     ports:
       - "1389:1389"
       - "1636:1636"
-    # healthcheck:
-    #   test: ["CMD", "ldapsearch", "-h", "ldap://ldap:1389"]
-    #   interval: 1m30s
-    #   timeout: 30s
-    #   retries: 5
-    #   start_period: 30s
+
   
   openbis:
     build: ./services/openbis
@@ -97,7 +94,7 @@ services:
       retries: 5
       start_period: 30s
 
-  openbis-configure:
+  openbis-initialiser:
     build: 
       context: ./services/
       dockerfile: ./openbis-initialiser/Dockerfile
