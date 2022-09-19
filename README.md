@@ -86,20 +86,24 @@ flowchart TB
     DSS--> store
     Proxy --> AS
     Proxy --> DSS
-    subgraph DSS
-    dropbox-plugin
     end
     subgraph store
         Dropboxes
         Workspace
     end
-    end
     subgraph EMPA
     user --> N:
     N: --> Datamover
     Datamover --> Dropboxes
+    subgraph upload-tool
+        frontend
+        backend
+        frontend <--> backend
     end
-
+    backend <--> N:
+    user --> frontend
+    backend --> Proxy
+    end
 ```
 
 ### Services
