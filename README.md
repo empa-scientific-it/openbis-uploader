@@ -39,8 +39,7 @@ The frontend should also be served by a webserver, it allows the user to interac
 
 #### Traditional Jython dropbox
 
-The following diagram shows the architecture of the current Jython/Java data ingestion solution:
-The users / the device place data in the `N:` folder; the datamover script transfers it to the ETH DSS store in the dropbox landing area. When a new dataset is detected, the corresponding dropbox plugin is triggered. This plugin receives the datasets to be attached as well as an OpenbisBIS transaction. Using these inputs, the plugin can create new openbis samples, attach medatata, attach the ingested metadata etc. When the work is done, the transaction is commited. By operating inside of a transaction, the work is atomic: if anything during the processing goes wrong, the entire transaction is rolled back leaving the instance clean.
+The following diagram shows the architecture of the current Jython/Java data ingestion solution as supported by ETH SIS:
 
 ```mermaid
 flowchart TB
@@ -65,8 +64,43 @@ flowchart TB
 
 ```
 
-#### New User-defined dropbox
+The users / the device place data in the `N:` folder; the datamover script transfers it to the ETH DSS store in the dropbox landing area. When a new dataset is detected, the corresponding dropbox plugin is triggered. This plugin receives the datasets to be attached as well as an OpenbisBIS transaction. Using these inputs, the plugin can create new openbis samples, attach medatata, attach the ingested metadata etc. When the work is done, the transaction is commited. By operating inside of a transaction, the work is atomic: if anything during the processing goes wrong, the entire transaction is rolled back leaving the instance clean.
 
+
+This solution works very well, however it suffers from two fundamental problems:
+
+- The plugins must be written in Jython 2.7 or in Java. The first option is not very appealing since it doesn't support the newer features of python and does not offer most of the powerful modern python packages. The latter option is not accessible but for a few professional software developers.
+
+- ETH SIS must approve and deploy the plugin on the OpenbisBIS datastore server. This makes the development and testing process slower and increases the level of coupling between ETH and EMPA. 
+
+We want to replace this with a more self-service solution, where ideally any user inse Empa can write a dataset ingestion plugin by simply implementing a python function.
+
+
+#### New User-defined dropbox
+The diagram below shows architecture of the new solution, which side-steps the dropox plugin, which needs to be installed directly in the OpenbisBIS DSS 
+
+```mermaid
+flowchart TB
+    subgraph ETH
+    DSS <--> AS
+    DSS--> store
+    Proxy --> AS
+    Proxy --> DSS
+    subgraph DSS
+    dropbox-plugin
+    end
+    subgraph store
+        Dropboxes
+        Workspace
+    end
+    end
+    subgraph EMPA
+    user --> N:
+    N: --> Datamover
+    Datamover --> Dropboxes
+    end
+
+```
 
 ### Services
 The tool is built upon a series of services, deployed as docker containers (the names given below  in **boldface** correspond to the names in the docker compose file [here](docker-compose.yml)). In most cases, the configuration / source code of the services is mounted to their corresponding directory using a bind mount, so that interactive development from outside the container is possible easily. For the location of the bind mounts, look at the corresponding `volumes` section for each service.
