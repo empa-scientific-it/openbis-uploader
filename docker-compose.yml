@@ -8,12 +8,8 @@ volumes:
       o: bind
       type: none
       device: /home/basi/dropboxes
-  # openbis-state:
-  #   driver: local
-  #   driver_opts:
-  #     o: bind
-  #     type: none
-  #     device: /home/basi/openbis-state
+  openbis-state:
+
 services:
   data-discovery:
     build: 
@@ -75,12 +71,13 @@ services:
     environment:
       - SERVER_HOST_PORT=localhost:8443
       - CORE_PLUGINS=enabled-modules = dataset-uploader, dataset-file-search, xls-import, eln-lims, openbis-ng-ui, search-store, user-management-maintenance
-    volumes:
+    volumes:      
+      - openbis-state:/home/openbis/openbis_state/
+      - ./services/openbis/groups.json:/home/openbis/openbis_state/as_etc/groups.json
       - ./services/openbis/service.properties:/home/openbis/openbis_state/as_etc/service.properties
       #- ./services/openbis/dss_service.properties:/home/openbis/openbis_state/dss_etc/service.properties
-      - ./services/openbis/groups.json:/home/openbis/openbis_state/as_etc/groups.json
       #- dropboxes:/home/openbis/openbis_state/dss_store/eln-lims-dropbox-marker/
-      - ./builds/openbis/:/home/openbis/openbis_state/
+
 
     ports:
       - "8443:443"
@@ -93,7 +90,12 @@ services:
       timeout: 30s
       retries: 5
       start_period: 30s
-
+  openbis-user-setup:
+    image: openbis
+    depends_on:
+      - openbis
+    restart: "no"
+    entrypoint: ["psql"]
   openbis-initialiser:
     build: 
       context: ./services/

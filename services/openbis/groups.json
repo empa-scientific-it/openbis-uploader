@@ -1,11 +1,16 @@
-{
+{   
+    "globalSpaces": ["ELN_SETTINGS"],
+    "commonSpaces":
+    {
+        "ADMIN": ["INVENTORY", "MATERIALS", "METHODS", "STORAGE", "STOCK_CATALOG", "ELN_SETTINGS"]
+    },
 	"groups": 
     [
         {
             "name":"Scientific IT",
             "key":"700",
             "ldapGroupKeys": ["cn=700,ou=users,dc=empa,dc=ch"],
-            "admins": ["basi"],
+            "admins": ["basi", "admin"],
             "shareIds": ["2", "3"],
             "createUserSpace": false,
             "userSpaceRole" : "POWER_USER",
@@ -20,6 +25,13 @@
             "createUserSpace": false,
             "userSpaceRole" : "POWER_USER",
             "useEmailAsUserId": "false"
+        },
+        {
+            "name": "admins",
+            "key":"admins",
+            "admins": ["admin"],
+            "users":["admin"],
+            "userSpaceRole" : "ADMIN"
         }
     ]
 }
