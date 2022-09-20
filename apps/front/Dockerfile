@@ -1,4 +1,4 @@
-FROM node:lts-alpine AS build-stage
+FROM node:current-alpine3.15 AS build-stage
 
 # Install the http server
 RUN npm install -g http-server
@@ -20,6 +20,7 @@ WORKDIR /usr/app
 
 CMD ["npm", "run", "dev"]
 # Builds app
+
 FROM base as prod
 
 
