@@ -24,6 +24,9 @@ RUN cd data-discovery/app && pip install -e .
 COPY ./openbis-configuration/instance_creator instance_creator
 RUN cd instance_creator/ && pip install -e .
 
+COPY ./data-discovery/uvicorn_log.yml .
 RUN cd ../data-discovery
 
-CMD ["python3", "app/main.py", "--host", "0.0.0.0", "--port", "80"]
+RUN mkdir logs/
+ENV PYTHONBREAKPOINT=0
+CMD ["python3", "app/main.py", "--host", "0.0.0.0", "--port", "80", "--log-config", "app/uvicorn_log.yml"]

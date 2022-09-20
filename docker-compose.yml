@@ -8,14 +8,23 @@ volumes:
       o: bind
       type: none
       device: /home/basi/dropboxes
+  #This stores the state of openbis, including logs
   openbis-state:
+  #Logs for promtail to ingest
+  logs:
+
+networks:
+  loki:
 
 services:
+
+
   data-discovery:
     build: 
       context: ./services/
       dockerfile: ./data-discovery/Dockerfile
     volumes:
+      - logs:/logs/:rw
       - ./services/data-discovery/app:/app/
       -  dropboxes:/shares/
       - ./services/openbis-configuration/instance_creator:/instance_creator/
@@ -69,6 +78,7 @@ services:
     build: ./services/openbis
     environment:
       - SERVER_HOST_PORT=localhost:8443
+      - GROUP_ID=1000
       - CORE_PLUGINS=enabled-modules = dataset-uploader, dataset-file-search, xls-import, eln-lims, openbis-ng-ui, search-store, user-management-maintenance
     volumes:      
     #Openbis state
@@ -77,6 +87,8 @@ services:
       - ./services/openbis/groups.json:/home/openbis/openbis_state/as_etc/groups.json
       - ./services/openbis/as_service.properties:/home/openbis/openbis_state/as_etc/service.properties
       - ./services/openbis/dss_service.properties:/home/openbis/openbis_state/dss_etc/service.properties
+      - logs:/home/openbis/openbis_state/dss_logs/:rw
+      - logs:/home/openbis/openbis_state/as_logs/:rw
       #- dropboxes:/home/openbis/openbis_state/dss_store/eln-lims-dropbox-marker/
     ports:
       - "8443:443"
@@ -89,6 +101,7 @@ services:
       timeout: 30s
       retries: 5
       start_period: 30s
+
   openbis-initialiser:
     build: 
       context: ./services/
@@ -101,6 +114,7 @@ services:
       - OPENBIS_PORT=443
       - OPENBIS_ADMIN_USER=admin
       - OPENBIS_ADMIN_PASSWORD=changeit
+
   frontend:
     build: 
       context: ./apps/front
@@ -112,3 +126,42 @@ services:
       - "8000:5173"
     depends_on:
       - data-discovery
+
+    #Log aggregation to monitor
+  #the other containers
+  loki:
+    image: grafana/loki
+    hostname: loki
+    ports: 
+      - 3100:3100
+    volumes:
+      - ./services/loki/config.yaml:/etc/loki/local-config.yaml
+    networks:
+      - loki
+    depends_on:
+      - openbis
+      - data-discovery
+      - ldap
+      - cache
+
+  promtail:
+    image: grafana/promtail:2.6.0
+    volumes:
+      - logs:/var/log:ro
+      - ./services/loki/promtail-config.yaml:/etc/promtail/config.yml
+    command: -config.file=/etc/promtail/config.yml
+    depends_on:
+      - loki
+
+    networks:
+      - loki
+
+  grafana:
+    image: grafana/grafana:latest
+    ports:
+      - "3000:3000"
+    networks:
+      - loki
+    depends_on:
+      - loki
+      - promtail
