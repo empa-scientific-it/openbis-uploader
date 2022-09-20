@@ -33,7 +33,7 @@ class ICPMsParser(OpenbisDatasetParser):
     """
     encoding= 'iso-8859-1'
 
-    async def process(self, ob: Openbis, transaction: Transaction, dataset: DataSet, loader_name: str, description: str) -> Transaction:
+    def process(self, ob: Openbis, transaction: Transaction, dataset: DataSet, loader_name: str, description: str) -> Transaction:
         """
         This is the function which processes the incoming dataset and extracts the metadata for openbis.
         The function requires the additional parameters `loader_name` and `description`. These are shown automatically in the dataset extractor UI
@@ -66,7 +66,7 @@ class ICPMsParser(OpenbisDatasetParser):
                             proj = dataset.experiment.project.identifier
                         new_exp = f"{proj}/ICP_MS_MEASUREMENTS"
                         sample = ob.new_object(type='ICPMS', code=None, props=props, experiment= new_exp)
-                        LOGGER.info(f"saved sample {sample.identifier}")
+                        #LOGGER.info(f"saved sample {sample.identifier}")
                         if dataset.sample is not None:
                             sample.set_parents(dataset.sample.identifier)
                         transaction.add(sample)
@@ -86,5 +86,6 @@ class ICPMsParser(OpenbisDatasetParser):
                         #         transaction.add(subdataset)
                                 #subdataset.save()
                     #print(a)
-        #Return the transaction with the new openbis objects (samples / collections / etc)
+        #Comit the transaction with the new openbis objects (samples / collections / etc)
+        transaction.commit()
         return transaction

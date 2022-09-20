@@ -2,7 +2,7 @@ from urllib.error import HTTPError
 from xml.dom.minidom import Entity
 from fastapi import APIRouter
 
-from fastapi import FastAPI, File, UploadFile, Depends, HTTPException, Body
+from fastapi import FastAPI, File, UploadFile, Depends, HTTPException, Body, BackgroundTasks
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from datastore.utils import files, settings
 from datastore.models import datasets
@@ -21,10 +21,15 @@ from datastore.routers.login import get_user, oauth2_scheme, get_credential_cont
 from datastore.routers.openbis import  get_openbis
 from datastore.services.parsers.interfaces import OpenbisDatasetParser
 from datastore.services.parsers import icp_ms
-from instance_creator.views import OpenbisHierarcy
-from datastore.models.parser import ParserParameters
 
+import datastore.services.parsers.helpers as parser_helper
+from instance_creator.views import OpenbisHierarcy
+from datastore.models.parser import ParserParameters, ParserProcess
+from fastapi.concurrency import run_in_threadpool
+from fastapi import WebSocket
 import logging
+
+import asyncio 
 LOGGER = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/datasets")
@@ -47,6 +52,8 @@ async def get_user_instance(user: ldap.LdapUser = Depends(get_ldap_user)) -> fil
     #Attach parser
     ds.register_parser('icp_ms', icp_ms.ICPMsParser)
     return ds
+
+
 
 
 @router.get("/find")
@@ -130,8 +137,9 @@ async def get_parser_parameters(parser: str, inst: files.InstanceDataStore = Dep
         raise HTTPException(204)
 
 
+
 @router.put("/transfer")
-async def transfer_file(params: ParserParameters, inst: files.InstanceDataStore = Depends(get_user_instance), ob: Openbis = Depends(get_openbis)):
+def transfer_file(params: ParserParameters, background_tasks: BackgroundTasks, inst: files.InstanceDataStore = Depends(get_user_instance), ob: Openbis = Depends(get_openbis), jobs: parser_helper.ProcessingJobRegistry = Depends(parser_helper.get_registry)):
     """
     Transfers a file from the datastore
     to the openbis server
@@ -145,12 +153,12 @@ async def transfer_file(params: ParserParameters, inst: files.InstanceDataStore 
         pass
     else:
         raise HTTPException(401, detail="Openbis section not active")
-    object, collection = params.object, params.collection
-    match object, collection:
+    sample, collection = params.object, params.collection
+    match sample, collection:
         case None, str(y):
             loader = lambda files, type: ob.new_dataset(experiment = collection, type = type, file = files)
         case str(x), None:
-            loader = lambda files, type: ob.new_dataset(sample = object, type = type, file = files)
+            loader = lambda files, type: ob.new_dataset(sample = sample, type = type, file = files)
         case str(x), str(y):
             raise HTTPException(401, detail='Either the sample or the collection must be specified, not both')
         case None, None:
@@ -160,10 +168,16 @@ async def transfer_file(params: ParserParameters, inst: files.InstanceDataStore 
         nd = loader(str(file[0]), params.dataset_type)
         nd.kind = 'PHYSICAL'
         trans = ob.new_transaction()
-        trans = await current_parser.process(ob, trans, nd, **params.function_parameters)
-        import pytest; pytest.set_trace()
-        trans.commit()
-        return {"permid": nd.code}
+        task_state = ParserProcess(status=parser_helper.ProcessState.IN_PROGRESS)
+        jobs.append_job(task_state)
+        background_tasks.add_task(current_parser.process,ob, trans, nd, **params.function_parameters)
+        LOGGER.info('dfone')
+        #trans = await run_in_threadpool(lambda: current_parser.process(ob, ))
+        #trans.commit()
+        return {"task_id": task_state.uid}
     except Exception as e:
         raise HTTPException(401, detail=str(e))
-    
+
+@router.websocket("/ws")
+async def parser_status(websocket: WebSocket):
+    await websocket.accept()

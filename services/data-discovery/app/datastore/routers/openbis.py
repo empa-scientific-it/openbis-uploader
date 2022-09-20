@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
 from datastore.routers.login import get_openbis, get_user 
-from datastore.services.openbis import OpenbisUser, get_user_instance
+from datastore.services.openbis import OpenbisUser
 import pytest
 from pybis import Openbis
 

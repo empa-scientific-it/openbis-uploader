@@ -8,3 +8,4 @@ passlib
 pybis
 bcrypt
 redis
+websockets

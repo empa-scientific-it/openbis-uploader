@@ -31,7 +31,7 @@ class OpenbisDatasetParser(ABC):
 
 
     @abstractmethod
-    async def process(self, ob: Openbis, transaction: Transaction, dataset: DataSet, *args, **kwargs) -> Transaction:
+    def process(self, ob: Openbis, transaction: Transaction, dataset: DataSet, *args, **kwargs) -> Transaction:
         """
         Abstract method to extract metadata from file and 
         register additional samples  / datasets.

@@ -132,7 +132,7 @@ class RedisCredentialsStore(AbstractCredentialStore):
             return False
         
     def invalidate(self, key: str):
-        self.redis.set(self.store_key(key,'invalidated'), True)
+        self.redis.set(self.store_key(key,'invalidated'), 1)
     
     def remove(self, key: str, audience: str):
         self.redis.delete(self.store_key(key, audience))
