@@ -1,4 +1,4 @@
-# openBIS Uploader / Daset ingestion tool
+# OpenBIS Uploader / Dataset ingestion tool
 
 ## Introduction
 Proof of concept of an openBIS dataset ingestion tool / webapp with self-service functionalities and a better UI
@@ -106,6 +106,12 @@ flowchart TB
     end
 ```
 
+The concept is similar to the previous generation of dropbox plugins, whith the difference that the python plugin runs in the backend server at EMPA; through the frontend app users can configure and register new plugin and monitor their progress.
+
+The idealised workflow is a follows:
+
+
+
 ### Services
 The tool is built upon a series of services, deployed as docker containers (the names given below  in **boldface** correspond to the names in the docker compose file [here](docker-compose.yml)). In most cases, the configuration / source code of the services is mounted to their corresponding directory using a bind mount, so that interactive development from outside the container is possible easily. For the location of the bind mounts, look at the corresponding `volumes` section for each service.
 
@@ -132,6 +138,20 @@ The tool is built upon a series of services, deployed as docker containers (the 
 
     This is the vue.js frontend app, which is served by Vite. It can be reached at https://localhost:8000.
     It accesses the backend service at **data-discovery** using a reverse proxy. The proxy is configured in [`vite.config.js`](./apps/front/app/vite.config.js). 
+
+
+Additionally, these services are used to collect logs and metrics
+
+- **loki** 
+
+    Performs log ingestion
+- **promtail**
+
+    Ships the logs to **loki**
+
+- **grafana**
+
+    Dashboard for log visualisation, displays the logs ingested by **loki**
 
 
 ## Structure of the repository
