@@ -14,7 +14,7 @@ interface OpenbisTreeState{
 export const useOpenbis = defineStore('openbis', 
 {
     state:  () => {
-        const ct = {identifier: '/', type: 'INSTANCE', children: [], properties: {}} as TreeNode
+        const ct = {identifier: '/', type: 'INSTANCE', children: [], properties: {}, ancestors: [] as string[], descendants: [] as string[]} as TreeNode
         return {
             tree: ct,
             current: ct,
