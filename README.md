@@ -80,37 +80,63 @@ We want to replace this with a more self-service solution, where ideally any use
 The diagram below shows architecture of the new solution, which side-steps the dropox plugin, which needs to be installed directly in the OpenbisBIS DSS 
 
 ```mermaid
-flowchart TB
+
+flowchart LR
     subgraph ETH
-    DSS <--> AS
+    DSS[fa:fa-server DSS] <--> AS[fa:fa-server AS]
     DSS--> store
     Proxy --> AS
     Proxy --> DSS
     end
     subgraph store
-        Dropboxes
-        Workspace
+        Incoming[(Incoming)]
+        Workspace[(Workspace)]
     end
     subgraph EMPA
-    user --> N:
-    N: --> Datamover
-    Datamover --> Dropboxes
-    subgraph upload-tool
-        frontend
-        backend
+    user[fa:fa-user User]  --> N[(N)]
+    N --> Datamover[fa:fa-server Datamover]
+    Datamover --> Incoming
+    subgraph upload-tool[fa:fa-server Upload Tool]
+        frontend[fa:fa-server Frontend]
+        backend[fa:fa-server Backend]
+        scripts[fa:fa-file Extraction script]
         frontend <--> backend
+        scripts --> backend
     end
-    backend <--> N:
-    user --> frontend
+    backend <--> N
+    user  --> frontend
     backend --> Proxy
     end
+
 ```
 
 The concept is similar to the previous generation of dropbox plugins, whith the difference that the python plugin runs in the backend server at EMPA; through the frontend app users can configure and register new plugin and monitor their progress.
 
 The idealised workflow is a follows:
 
+```mermaid
+sequenceDiagram
+    actor User
+    participant N
+    participant Upload Tool
+    participant Openbis
+    User->> N: Upload file
+    User->>Upload Tool: Start Upload
+    activate Upload Tool
+    Upload Tool->> N: Get file
+    N->> Upload Tool: File
+    Upload Tool ->> Upload Tool: Extract Metadata
+    Upload Tool ->> Openbis: Transfer File
+    Openbis ->> N: Request File
+    N ->> Openbis: Obtain File
+    Openbis ->> Upload Tool: Finished Transfer
+    Upload Tool ->> Openbis: Create Metadata
+    Openbis ->> Upload Tool: Finished metadata creation
+    Upload Tool ->> User: Upload Finished
+    deactivate Upload Tool
+```
 
+- The user (or the instrument) puts a file in `N:`, either by accessing it through the OS or by uplodaing it through the frontend. The datamover service uses rsync to move it to the `Incoming` storage on the openBIS DSS. Meanwhile, the user uses the frontend to select a dataset ignestion script (in the future this step could be replaced with automatic selection of script based on regex / filenames)
 
 ### Services
 The tool is built upon a series of services, deployed as docker containers (the names given below  in **boldface** correspond to the names in the docker compose file [here](docker-compose.yml)). In most cases, the configuration / source code of the services is mounted to their corresponding directory using a bind mount, so that interactive development from outside the container is possible easily. For the location of the bind mounts, look at the corresponding `volumes` section for each service.
@@ -119,12 +145,15 @@ The tool is built upon a series of services, deployed as docker containers (the 
 
     This service provides a pre-configured openbis instance whith ldap login configured; the authentication is made using the **ldap** service.   This is defined throught [`service.properties`](./services/openbis/service.properties) and [`groups.json`](./services/openbis/groups.json) 
 
+    The instance can be reached at https://localhost:8443 and offers all the usual API endpoints described in the openBIS documentation.
+
     The instance is populated at runtime with default object and structures by the **openbs-initialiser** ephermeral service. The instance configuration is in [`instance.json`](./services/openbis-initialiser/config/instance.json)
 
 - **data-discovery**
 
     This service provides the REST API which acts as the sole entrypoint for all operations on the file staging area, the dataset ingestion and the communication with openbis. This services depends on the **cache** service, which provides a redis instance used for login invalidation. As configured by default, 
-    this service connnect to the openbis instance **openbis**. An external instance can be configured by changing the  `OPENBIS_SERVER` env variable in the docker service definition. The container can be reached from outside the docker compose network at https://localhost:8080
+
+    this service connnect to the openbis instance **openbis**. An external instance can be configured by changing the  `OPENBIS_SERVER` env variable in the docker service definition under the `environment` key. The container can be reached from outside the docker compose network at https://localhost:8080
 
 - **ldap**
     
@@ -137,13 +166,13 @@ The tool is built upon a series of services, deployed as docker containers (the 
 - **frontend**
 
     This is the vue.js frontend app, which is served by Vite. It can be reached at https://localhost:8000.
-    It accesses the backend service at **data-discovery** using a reverse proxy. The proxy is configured in [`vite.config.js`](./apps/front/app/vite.config.js). 
+    It accesses the backend service at **data-discovery** using a reverse proxy. The proxy is configured in [`vite.config.js`](./apps/front/app/vite.config.js). The dockerfile contains a second stage for deployment, the reverse proxy is provided by ngnix, which can be configured in [`ngnix.conf`](./apps/front/app/nginx.conf)
 
 - **datamover**
 
-    This is a simple container that uses inetd-notify and rsync to synchronise the data from the datastores (staging areas) to the incoming areas in the 
+    This container uses inetd-notify and rsync to synchronise the data from the datastores (staging areas) to the incoming areas in the 
     openbis DSS.
-    
+
 
 
 Additionally, these services are used to collect logs and metrics
