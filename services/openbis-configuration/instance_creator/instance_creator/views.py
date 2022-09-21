@@ -28,9 +28,11 @@ class TreeElement(BaseModel):
     code: str | None = None
     permid: str | None = None
     type: OpenbisHierarcy | None = None
-    attributes: Dict[str, Any] | None = None
+    properties: Dict[str, Any] | None = None
     children: List['TreeElement'] | List[None] = fields.Field([])
     openbis_type: str | None = None
+    ancestors: List[str] | None = []
+    descendants: List[str] | None = []
 
     def children_ids(self) -> List[str]:
         return [el.identifier for el in self.children] 
@@ -67,8 +69,7 @@ class TreeElementObject(TreeElement):
     of this object to others
     """
     collection: str
-    ancestors: List[str] | None = []
-    descendants: List[str] | None = []
+
 
 
 @dataclass
@@ -122,7 +123,6 @@ def tree_builder(paths: List[OpenbisSampleInfo]) -> TreeElement:
     of the tree
     """
     def recurse_setdefault(array: List[str] | str, res: TreeElement):
-        print(array)
         path_type = path_to_openbis_type(array)
         match array:
             #Leaf
