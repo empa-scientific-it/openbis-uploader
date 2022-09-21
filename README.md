@@ -139,6 +139,12 @@ The tool is built upon a series of services, deployed as docker containers (the 
     This is the vue.js frontend app, which is served by Vite. It can be reached at https://localhost:8000.
     It accesses the backend service at **data-discovery** using a reverse proxy. The proxy is configured in [`vite.config.js`](./apps/front/app/vite.config.js). 
 
+- **datamover**
+
+    This is a simple container that uses inetd-notify and rsync to synchronise the data from the datastores (staging areas) to the incoming areas in the 
+    openbis DSS.
+    
+
 
 Additionally, these services are used to collect logs and metrics
 

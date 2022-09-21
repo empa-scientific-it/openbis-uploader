@@ -2,16 +2,18 @@ version: "3.9"
 volumes:
   #These correspond to the N: folders where
   #the user can place the data to upload
-  dropboxes:
+  staging:
     driver: local
     driver_opts:
       o: bind
       type: none
-      device: /home/basi/dropboxes
+      device: /home/basi/staging
   #This stores the state of openbis, including logs
   openbis-state:
   #Logs for promtail to ingest
   logs:
+  #Incoming dropboxes
+  openbis-incoming:
 
 networks:
   loki:
@@ -26,7 +28,7 @@ services:
     volumes:
       - logs:/logs/:rw
       - ./services/data-discovery/app:/app/
-      -  dropboxes:/shares/
+      -  staging:/shares/
       - ./services/openbis-configuration/instance_creator:/instance_creator/
     hostname: data-discovery
     ports:
@@ -34,6 +36,7 @@ services:
     depends_on:
       - openbis
       - ldap
+      - datamover
     environment:
       - BASE_PATH=/shares
       - LDAP_SERVER=ldap
@@ -56,7 +59,18 @@ services:
     volumes: 
       - ./builds/cache:/data
     hostname: redis
-    
+  datamover:
+    build:
+      context: ./services/datamover/
+    environment:
+      - SOURCE=/incoming/
+      - DEST=/outgoing/
+      - LOG=/transfer.log
+    volumes:
+      - staging:/incoming/
+      - openbis-incoming:/outgoing/
+    depends_on:
+      - openbis
   ldap:
     image: bitnami/openldap:latest
     environment:
@@ -83,6 +97,7 @@ services:
     volumes:      
     #Openbis state
       - openbis-state:/home/openbis/openbis_state/
+      - openbis-incoming:/home/openbis/openbis_state/dss_store/incoming
       #External configuration files
       - ./services/openbis/groups.json:/home/openbis/openbis_state/as_etc/groups.json
       - ./services/openbis/as_service.properties:/home/openbis/openbis_state/as_etc/service.properties
@@ -91,7 +106,8 @@ services:
       - logs:/home/openbis/openbis_state/as_logs/:rw
       #- dropboxes:/home/openbis/openbis_state/dss_store/eln-lims-dropbox-marker/
     ports:
-      - "8443:443"
+      - 8443:443
+      - 8444:8081
     hostname: openbis
     depends_on:
       - ldap
@@ -151,6 +167,7 @@ services:
       - ./services/loki/promtail-config.yaml:/etc/promtail/config.yml
     command: -config.file=/etc/promtail/config.yml
     depends_on:
+      - openbis
       - loki
 
     networks:
