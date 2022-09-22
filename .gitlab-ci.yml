@@ -6,6 +6,8 @@ stages:
   - deploy
   - cleanup
 
+variables:
+  CI_REGISTRY_IMAGE: localhost:5000/registry
 
 before_script:
   - docker info
@@ -17,8 +19,8 @@ build-data-discovery:
     - docker:dind
   tags:
     - dind
-  before_script:
-    - echo -n $CI_REGISTRY_PASSWORD  | docker login -u $CI_REGISTRY_USER --password-stdin $CI_REGISTRY
+  # before_script:
+  #   - echo -n $CI_REGISTRY_PASSWORD  | docker login -u $CI_REGISTRY_USER --password-stdin $CI_REGISTRY
   script:
     - docker build --pull -t "$CI_REGISTRY_IMAGE"/data-discovery:latest ./services/data-discovery/
     - docker push "$CI_REGISTRY_IMAGE"/data-discovery:latest
@@ -49,3 +51,5 @@ stop_registry:
   stage: cleanup
   when: on_failure
   script: docker stop registry
+
+  
