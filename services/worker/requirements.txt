@@ -1,0 +1,7 @@
+celery[redis]
+fastapi
+pandas
+pybis
+json-rpc
+pydantic
+watchdog

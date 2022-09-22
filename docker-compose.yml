@@ -20,6 +20,20 @@ networks:
 
 services:
 
+  worker:
+    build:
+      context: ./services/
+      dockerfile: ./worker/Dockerfile
+    depends_on:
+      - cache
+    hostname: worker
+    volumes:
+      - ./services/worker/app:/app/
+      - ./services/data-discovery/app/datastore/tasks/:/app/tasks
+    environment:
+      - REDIS_URL=redis
+      - REDIS_PORT=6379
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
 
   data-discovery:
     build: 
@@ -37,6 +51,8 @@ services:
       - openbis
       - ldap
       - datamover
+      - cache 
+      - worker
     environment:
       - BASE_PATH=/shares
       - LDAP_SERVER=ldap
@@ -49,7 +65,7 @@ services:
       - CREDENTIALS_STORAGE_KEY=428c9416c004ea21fcfe3480d3b84d92306784bea452d3a249cdcf9e6250eeb8
       - REDIS_HOST=redis
       - REDIS_PORT=6379
-      - REDIS_PASSWORD=eYVX7EwVmmxKPCDmwMtyKVge8oLd2t81
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
   cache:
     image: redis:6.2-alpine
     restart: always
@@ -59,6 +75,10 @@ services:
     volumes: 
       - ./builds/cache:/data
     hostname: redis
+
+
+
+
   datamover:
     build:
       context: ./services/datamover/
