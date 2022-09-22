@@ -1,6 +1,6 @@
 {
   "compilerOptions": {
-    "target": "es6",
+    "target": "es21",
     "module": "esnext",
     "baseUrl": "./",
     "moduleResolution": "node",
