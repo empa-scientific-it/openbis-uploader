@@ -40,6 +40,7 @@ class DataStoreSettings(BaseSettings):
     credentials_storage_key: str = None 
     port: int = 8080
     host: str = "localhost"
+    task_serialiser: str = 'pickle'
     class Config:
         env_prefix = ""
         case_sensitive = False

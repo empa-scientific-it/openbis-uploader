@@ -4,6 +4,8 @@ from datastore.services.openbis import OpenbisUser
 import pytest
 from pybis import Openbis
 
+from typing import Dict
+
 from instance_creator.models import OpenbisTreeObject, OpenbisProject, OpenbisSample, OpenbisCollection, OpenbisInstance, OpenbisSpace
 import instance_creator.views as ic_views
 from instance_creator.views import OpenbisHierarcy
@@ -21,6 +23,7 @@ async def get_tree(ob: Openbis = Depends(get_openbis)):
 async def get_dataset_types(ob: Openbis = Depends(get_openbis)):
     return ob.get_dataset_types().df.permId.to_list()
 
+#Methods to handle openbis objects
 
 @router.get('/', response_model=OpenbisTreeObject)
 async def get_object_info(identifier: str, type: OpenbisHierarcy, ob: Openbis = Depends(get_openbis)) -> OpenbisTreeObject:
@@ -35,6 +38,39 @@ async def get_object_info(identifier: str, type: OpenbisHierarcy, ob: Openbis = 
             return OpenbisSpace.from_openbis(ob, identifier)
         case OpenbisHierarcy.INSTANCE:
             return OpenbisInstance.from_openbis(ob, identifier)
+
+@router.put('/', response_model=OpenbisTreeObject)
+async def update_object(identifier: str, type: OpenbisHierarcy, properties: Dict, ob: Openbis = Depends(get_openbis)):
+    """
+    Update object properties
+    """
+    match type:
+        case OpenbisHierarcy.SAMPLE:
+            smp = ob.get_object(identifier)
+            if smp is not None:
+                smp.set_properties(properties)
+            else:
+                raise HTTPException(401, detail=f'Cannot find object with identifier {identifier}')
+        case _:
+            raise HTTPException(401, detail='Updating only possible for OBJECT')
+
+# @router.post('/', response_model=OpenbisTreeObject)
+# async def create_object(identifier: str, type: OpenbisHierarcy, object_type: str, params: dict, ob: Openbis = Depends(get_openbis)) -> OpenbisTreeObject:
+#     """
+#     Create new openbis object
+#     """
+#     match type:
+#         case OpenbisHierarcy.PROJECT:
+#             import pytest; pytest.set_trace()
+#         case OpenbisHierarcy.COLLECTION:
+#             return OpenbisCollection.from_openbis(ob, identifier)
+#         case OpenbisHierarcy.SAMPLE:
+#             return OpenbisSample.from_openbis(ob, identifier)
+#         case OpenbisHierarcy.SPACE:
+#             return OpenbisSpace.from_openbis(ob, identifier)
+#         case OpenbisHierarcy.INSTANCE:
+#            raise HTTPException(401, detail='Cannot create instance using REST API')
+
 
 @functools.lru_cache
 def get_tree(ob: Openbis) -> ic_views.TreeElement:

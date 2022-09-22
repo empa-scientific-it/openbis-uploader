@@ -29,6 +29,11 @@ from fastapi.concurrency import run_in_threadpool
 from fastapi import WebSocket
 import logging
 
+
+import datastore.tasks.openbis.tasks  as openbis_tasks
+
+from datastore.utils import celery
+
 import asyncio 
 LOGGER = logging.getLogger(__name__)
 
@@ -145,6 +150,8 @@ def transfer_file(params: ParserParameters, background_tasks: BackgroundTasks, i
     to the openbis server
     """
     LOGGER.info('Entered')
+    celery_app = celery.get_celery() 
+    celery_app.send_task('zulo.task',['a',print])
     try:
         file = inst.get_file(params.source)
     except FileNotFoundError:

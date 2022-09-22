@@ -178,25 +178,19 @@ def test_post_file(client, token):
     find_query = client.get(f"/datasets/find/?pattern={fn.name}", headers=token("ldap"))
 
 
-def test_openbis(client, token):
+def test_openbis_tree(client, token):
     resp = client.get(f"/openbis/tree/", headers=token("openbis", "basi"))
-    pytest.set_trace()
+    assert resp.status_code == 200
 
-def test_openbis_info_project(client, token):
-    resp = client.get(f"/openbis/info?", headers=token("openbis", "basi"), params={'identifier':'/DEMO/TEST', 'type':'PROJECT'})
-    pytest.set_trace()
+def test_openbis_info(client, token):
+    for identifier, level in [('/DEMO/TEST', 'PROJECT'), ('DEMO', 'SPACE'), ('/DEMO/TEST/SAMPLES', 'COLLECTION')]:
+        resp = client.get(f"/openbis/?", headers=token("openbis", "basi"), params={'identifier':identifier, 'type':level})
+        assert (resp.status_code == 200) & (resp.json()['identifier'] == identifier)
 
-def test_openbis_info_space(client, token):
-    resp = client.get(f"/openbis/info?", headers=token("openbis", "basi"), params={'identifier':'/DEMO/', 'type':'SPACE'})
-    pytest.set_trace()
-
-def test_openbis_info_collection(client, token):
-    resp = client.get(f"/openbis/info?", headers=token("openbis", "basi"), params={'identifier':'/DEMO/TEST/SAMPLES', 'type':'COLLECTION'})
-    pytest.set_trace()
 
 def test_openbis_delete(client, token):
     resp = client.delete(f"/openbis/?", headers=token("openbis", "basi"), params={'identifier':'/DEMO/TEST/SAMP1'})
-    pytest.set_trace()
+    assert resp.status_code == 200
 
 def test_transfer(client, token):
     with  tf.NamedTemporaryFile() as temp_file:
