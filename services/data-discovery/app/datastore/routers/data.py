@@ -27,12 +27,14 @@ from instance_creator.views import OpenbisHierarcy
 from datastore.models.parser import ParserParameters, ParserProcess
 from fastapi.concurrency import run_in_threadpool
 from fastapi import WebSocket
+
 import logging
 
 
-import datastore.tasks.openbis.tasks  as openbis_tasks
 
-from datastore.utils import celery
+from datastore.utils import rq as rq_utils
+
+from datastore.tasks import openbis as ob_tasks
 
 import asyncio 
 LOGGER = logging.getLogger(__name__)
@@ -150,8 +152,9 @@ def transfer_file(params: ParserParameters, background_tasks: BackgroundTasks, i
     to the openbis server
     """
     LOGGER.info('Entered')
-    celery_app = celery.get_celery() 
-    celery_app.send_task('zulo.task',['a',print])
+    qu = rq_utils.get_queue()
+    qu.enqueue(ob_tasks.sum, 1,2)
+    import pytest; pytest.set_trace()
     try:
         file = inst.get_file(params.source)
     except FileNotFoundError:

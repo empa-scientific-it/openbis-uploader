@@ -28,8 +28,7 @@ services:
       - cache
     hostname: worker
     volumes:
-      - ./services/worker/app:/app/
-      - ./services/data-discovery/app/datastore/tasks/:/app/tasks
+      - ./services/data-discovery/app/datastore/:/datastore
     environment:
       - REDIS_URL=redis
       - REDIS_PORT=6379
@@ -122,8 +121,8 @@ services:
       - ./services/openbis/groups.json:/home/openbis/openbis_state/as_etc/groups.json
       - ./services/openbis/as_service.properties:/home/openbis/openbis_state/as_etc/service.properties
       - ./services/openbis/dss_service.properties:/home/openbis/openbis_state/dss_etc/service.properties
-      - logs:/home/openbis/openbis_state/dss_logs/:rw
-      - logs:/home/openbis/openbis_state/as_logs/:rw
+      # - logs:/home/openbis/openbis_state/dss_logs/:rw
+      # - logs:/home/openbis/openbis_state/as_logs/:rw
       #- dropboxes:/home/openbis/openbis_state/dss_store/eln-lims-dropbox-marker/
     ports:
       - 8443:443

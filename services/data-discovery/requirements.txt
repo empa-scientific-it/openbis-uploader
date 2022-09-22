@@ -9,4 +9,4 @@ pybis
 bcrypt
 redis
 websockets
-celery[redis]
+rq

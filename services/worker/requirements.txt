@@ -1,5 +1,5 @@
-celery[redis]
-fastapi
+rq
+redis
 pandas
 pybis
 json-rpc
