@@ -5,8 +5,8 @@ import tempfile as tf
 import sys
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
-from datastore.routers import login, data, openbis
-from datastore.utils import settings
+from datastore.routers import login, data, openbis, tasks
+from datastore.utils import settings, redis as redis_utils, rq as rq_utils
 from datastore.utils import files
 from datastore.services.ldap import ldap
 from datastore.services.parsers.interfaces import OpenbisDatasetParser
@@ -26,6 +26,9 @@ import textwrap
 
 from datastore.app import create_app
 
+from rq import SimpleWorker, Queue, Worker
+from multiprocessing import Process
+
 @pytest.fixture
 def client() -> TestClient:
     app = create_app()
@@ -39,6 +42,7 @@ def temp_settings(base_path: pl.Path):
             env_file = pl.Path(__file__) / pl.Path('.env')
     return TempSettings
 
+
 @pytest.fixture
 def temp_client() -> Callable:
     def _inner(path: pl.Path)  -> TestClient:
@@ -46,6 +50,7 @@ def temp_client() -> Callable:
         app.include_router(login.router)
         app.include_router(data.router)
         app.include_router(openbis.router)
+        app.include_router(tasks.router)
         app.dependency_overrides[settings.get_settings] = temp_settings(path)
         client = TestClient(app)
         return client
@@ -83,7 +88,18 @@ def temp_files(client, token):
     cf = tf.NamedTemporaryFile(dir = ds.path)
     yield cf
     cf.close()
- 
+
+
+@pytest.fixture
+def temp_worker():
+    con = redis_utils.get_redis()
+    queue = Queue(connection=con)
+    worker = Worker([queue], connection = con )
+    proc = Process(target = worker.work, kwargs=dict(burst=True))
+    proc.start()
+    print('started')
+    return proc
+
 def test_auth_fail(client):
     response = client.post("/authorize/ldap/token")
     assert response.status_code == 422
@@ -199,17 +215,35 @@ def test_transfer(client, token):
         fn = pl.Path(temp_file.name)
     body = {'source':fn.name, 'collection': '/MEASUREMENTS/TEST/EXP1', 'parser':'icp_ms', 'dataset_type':'RAW_DATA', 'function_parameters': {'a':1}}
     transfer_query = client.put(f"/datasets/transfer", headers=token("all"), json=body)
-    import pytest; pytest.set_trace()
 
 def test_parser_parameters(client, token):
     params = {'parser': 'icp_ms'}
     resp = client.get(f"/datasets/parser_info?", headers=token("all", "basi"), params=params)
     pytest.set_trace()
 
-def test_icp_ms_parser(client, token):
-    body ={"object":"/DEMO/TEST/SAMP1","dataset_type":"RAW_DATA","parser":"icp_ms","source":"ICP-MS RAW.zip","function_parameters":{"loader_name":"das","description":"ad"}}
+def test_icp_ms_parser(client, token, temp_worker):
+    body ={"identifier":"/DEMO/TEST/SAMP33", 'type':'OBJECT',"dataset_type":"RAW_DATA","parser":"icp_ms","source":"ICP-MS RAW.zip","function_parameters":{"loader_name":"das","description":"ad"}}
     transfer_query = client.put(f"/datasets/transfer", headers=token("all"), json=body)
-    import pytest; pytest.set_trace()
+    temp_worker.interrupt()
+    assert transfer_query.status_code == 202
+
+def test_icp_ms_parser_logger(client, token, temp_worker):
+    body ={"identifier":"/DEMO/TEST/SAMP33", 'type':'OBJECT',"dataset_type":"RAW_DATA","parser":"icp_ms","source":"ICP-MS RAW.zip","function_parameters":{"loader_name":"das","description":"ad"}}
+    transfer_query = client.put(f"/datasets/transfer", headers=token("all"), json=body)
+    task_id = transfer_query.json()['taskid']
+    print(task_id)
+    temp_worker.join()
+    # import pytest; pytest.set_trace()
+    # with client.websocket_connect(f"/log") as websocket:
+    #     while True:
+    #         data = websocket.receive_text()
+    #         print(data)
+    # import pytest; pytest.set_trace()
+
+    assert data == {"msg": "Hello WebSocket"}
+    
+    assert transfer_query.status_code == 202
+
 
 @pytest.fixture
 def test_parser_class() -> Type[OpenbisDatasetParser]:

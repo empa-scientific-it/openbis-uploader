@@ -1,6 +1,6 @@
 
 from fastapi import FastAPI, File, UploadFile, Depends
-from datastore.routers import data, login, openbis
+from datastore.routers import data, login, openbis, tasks
 from datastore.utils import settings
 
 import argparse as ap
@@ -26,4 +26,5 @@ def create_app():
     app.include_router(login.router)
     app.include_router(data.router)
     app.include_router(openbis.router)
+    app.include_router(tasks.router)
     return app

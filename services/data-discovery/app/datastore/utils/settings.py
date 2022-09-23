@@ -56,7 +56,8 @@ class DataStoreSettings(BaseSettings):
                 env_settings, init_settings
             )
 
-@lru_cache()
+# @lru_cache()
 def get_settings() -> DataStoreSettings:
-    logger.info("Here")
     return DataStoreSettings()
+
+

@@ -19,8 +19,8 @@ LOGGER = logging.getLogger(__name__)
 from typing import List, Callable
 import pandas as pd
         
-def match_files(zf: zipfile.ZipFile, predicate: Callable[[pl.Path], bool]) -> List[pl.PurePath]:
-    return [pl.PurePath(f.filename) for f in zf.infolist() if predicate(pl.Path(f.filename))]
+def match_files(zf: pl.Path, predicate: Callable[[pl.Path], bool]) -> List[pl.PurePath]:
+    return [pl.PurePath(f) for f in zf.iterdir() if predicate(f)]
 
 def clean_names(df: pd.DataFrame) -> pd.DataFrame:
     df_out = df.copy()
@@ -38,17 +38,30 @@ class ICPMsParser(OpenbisDatasetParser):
         This is the function which processes the incoming dataset and extracts the metadata for openbis.
         The function requires the additional parameters `loader_name` and `description`. These are shown automatically in the dataset extractor UI
         """
-        #Load file
-        with zipfile.ZipFile(dataset.file_list[0], 'r') as zf,  tempfile.TemporaryDirectory() as td:
-            
+        #Create names
+        if dataset.sample is not None:
+            ids = dataset.sample.experiment.identifier
+            proj = dataset.sample.project.identifier
+            is_sample = True
+        elif dataset.experiment is not None:
+            ids = dataset.experiment.identifer
+            proj = dataset.experiment.project.identifier
+            is_sample = False
+        else:
+            raise ValueError()
+        #Extract file temporarily
+        with  tempfile.TemporaryDirectory() as td:
+            with zipfile.ZipFile(dataset.file_list[0], 'r') as zf:
+                zf.extractall(path=td)
+            LOGGER.info("Extracting all contents")
+            td_path = pl.Path(td)
             #Extract the batch log of all measurements
-            batch_log, *rest = match_files(zf, lambda path: path.name == "BatchLog.csv")
+            batch_log, *rest = td_path.glob("**/BatchLog.csv")
             if batch_log:
                 #Iterate over the row of the log
-                batch_log_path = zf.extract(str(batch_log), path=td)
-                batch_log_dt = clean_names(pd.read_csv(batch_log_path, encoding=self.encoding))
+                batch_log_dt = clean_names(pd.read_csv(batch_log, encoding=self.encoding))
                 for row in batch_log_dt.itertuples():
-
+                    LOGGER.info('Adding properties')
                     #Create metadata for each sample in the measurement log
                     props = {
                     "icpms.sample_name": row.samplename, 
@@ -57,25 +70,20 @@ class ICPMsParser(OpenbisDatasetParser):
                     'icpms.acquistion_result': row.acquisitionresult,
                     'icpms.operator': row.operator}
                     if row.acquisitionresult != 'Skip':
-                        if dataset.sample is not None:
-                            ids = dataset.sample.experiment.identifier
-                            proj = dataset.sample.project.identifier
-                        elif dataset.experiment is not None:
-                            ids = dataset.experiment.identifer
-
-                            proj = dataset.experiment.project.identifier
                         new_exp = f"{proj}/ICP_MS_MEASUREMENTS"
-                        sample = ob.new_object(type='ICPMS', code=None, props=props, experiment= new_exp)
-                        #LOGGER.info(f"saved sample {sample.identifier}")
-                        if dataset.sample is not None:
-                            sample.set_parents(dataset.sample.identifier)
+                        LOGGER.info('Creating sample')
+                        sample = ob.new_object(type='ICPMS', props=props, experiment= new_exp)
+                        LOGGER.info(f"saved sample {sample.identifier}")
+                        # if is_sample:
+                        #     sample.set_parents(ids)
                         transaction.add(sample)
+                        
                         #Add a dataset for each sample
                         #Because the transaction is not finished, generate sample code here
                         #import pytest; pytest.set_trace()
                                             #Find the dataset for the sample
-                        subdataset_name = pl.PureWindowsPath(row.filename).name
-                        mts = match_files(zf, lambda path: path.name == subdataset_name)
+                        # subdataset_name = pl.PureWindowsPath(row.filename).name
+                        # mts = td_path.glob("**/{subdataset_name}")
                         # if mts:
                         #     zf_iter = zipfile.Path(zf, at=str(mts[0]) + '/' )
                         #     subdataset_extract = [zf.extract(f.at, path=td)  for f in zf_iter.iterdir()]
@@ -87,5 +95,4 @@ class ICPMsParser(OpenbisDatasetParser):
                                 #subdataset.save()
                     #print(a)
         #Comit the transaction with the new openbis objects (samples / collections / etc)
-        transaction.commit()
         return transaction

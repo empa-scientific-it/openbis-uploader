@@ -2,8 +2,9 @@ from urllib.error import HTTPError
 from xml.dom.minidom import Entity
 from fastapi import APIRouter
 
-from fastapi import FastAPI, File, UploadFile, Depends, HTTPException, Body, BackgroundTasks
+from fastapi import FastAPI, File, UploadFile, Depends, HTTPException, Body, BackgroundTasks, status
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
+from datastore.utils.redis import get_redis
 from datastore.utils import files, settings
 from datastore.models import datasets
 from datastore.services.ldap import auth, ldap, session
@@ -30,13 +31,21 @@ from fastapi import WebSocket
 
 import logging
 
+from instance_creator.views import OpenbisHierarcy
 
+
+from datastore.models import openbis as openbis_models
 
 from datastore.utils import rq as rq_utils
 
 from datastore.tasks import openbis as ob_tasks
 
 import asyncio 
+
+
+from redis import Redis
+
+from rq import Queue
 LOGGER = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/datasets")
@@ -145,49 +154,52 @@ async def get_parser_parameters(parser: str, inst: files.InstanceDataStore = Dep
 
 
 
-@router.put("/transfer")
-def transfer_file(params: ParserParameters, background_tasks: BackgroundTasks, inst: files.InstanceDataStore = Depends(get_user_instance), ob: Openbis = Depends(get_openbis), jobs: parser_helper.ProcessingJobRegistry = Depends(parser_helper.get_registry)):
+@router.put("/transfer", status_code=status.HTTP_202_ACCEPTED, response_model=ParserProcess)
+def transfer_file(params: ParserParameters, background_tasks: BackgroundTasks, user: ldap.LdapUser = Depends(get_ldap_user), queue: Queue = Depends(rq_utils.get_queue), inst: files.InstanceDataStore = Depends(get_user_instance), ob: Openbis = Depends(get_openbis), jobs: parser_helper.ProcessingJobRegistry = Depends(parser_helper.get_registry)):
     """
     Transfers a file from the datastore
-    to the openbis server
+    to the openbis server by using one of
+    the registed dataset extraction scripts.
+    The processing happens on an external worker using rq. Returns a task
+    id which can be used to moinitor the task
     """
-    LOGGER.info('Entered')
-    qu = rq_utils.get_queue()
-    qu.enqueue(ob_tasks.sum, 1,2)
-    import pytest; pytest.set_trace()
+    #Get files
+
     try:
-        file = inst.get_file(params.source)
+        files_to_attach = inst.get_file(params.source)
     except FileNotFoundError:
         raise HTTPException(401, detail="The file {params.source} cannot be found")
-    if ob.is_session_active():
-        pass
-    else:
-        raise HTTPException(401, detail="Openbis section not active")
-    sample, collection = params.object, params.collection
-    match sample, collection:
-        case None, str(y):
-            loader = lambda files, type: ob.new_dataset(experiment = collection, type = type, file = files)
-        case str(x), None:
-            loader = lambda files, type: ob.new_dataset(sample = sample, type = type, file = files)
-        case str(x), str(y):
-            raise HTTPException(401, detail='Either the sample or the collection must be specified, not both')
-        case None, None:
-            raise HTTPException(401, detail='Specify a sample or a collection')
-    try:
-        current_parser = inst.parsers[params.parser]()
-        nd = loader(str(file[0]), params.dataset_type)
-        nd.kind = 'PHYSICAL'
-        trans = ob.new_transaction()
-        task_state = ParserProcess(status=parser_helper.ProcessState.IN_PROGRESS)
-        jobs.append_job(task_state)
-        background_tasks.add_task(current_parser.process,ob, trans, nd, **params.function_parameters)
-        LOGGER.info('dfone')
-        #trans = await run_in_threadpool(lambda: current_parser.process(ob, ))
-        #trans.commit()
-        return {"task_id": task_state.uid}
-    except Exception as e:
-        raise HTTPException(401, detail=str(e))
+    #Get the parser
+    current_parser = inst.parsers[params.parser]()
+    ob_m = openbis_models.OpenbisConnection.from_ob(ob)
+    job = rq_utils.create_job(queue.connection, user, ob_tasks.process,[ob, files_to_attach, params.identifier, params.type.value,   current_parser, params.function_parameters], timeout=36000)
+    enqueued_job = queue.enqueue_job(job)
+    return {'taskid': job.id}
+    # if ob.is_session_active():
+    #     pass
+    # else:
+    #     raise HTTPException(401, detail="Openbis section not active")
+    
+    # match params.type:
+    #     case OpenbisHierarcy.COLLECTION:
+    #         loader = lambda files, type: ob.new_dataset(experiment = params.identifier, type = type, file = files)
+    #     case OpenbisHierarcy.OBJECT:
+    #         loader = lambda files, type: ob.new_dataset(sample = params.identifier, type = type, file = files)
+    #     case _:
+    #         raise HTTPException(401, detail='Specify a sample or a collection to attach an object to')
+    # try:
+    #     current_parser = inst.parsers[params.parser]()
+    #     nd = loader(str(files_to_attach[0]), params.dataset_type)
+    #     nd.kind = 'PHYSICAL'
+    #     trans = ob.new_transaction()
+    #     task_state = ParserProcess(status=parser_helper.ProcessState.IN_PROGRESS)
+    #     jobs.append_job(task_state)
+    #     background_tasks.add_task(current_parser.process, ob, trans, nd, **params.function_parameters)
+    #     LOGGER.info('dfone')
+    #     #trans = await run_in_threadpool(lambda: current_parser.process(ob, ))
+    #     #trans.commit()
+    #     return {"task_id": task_state.uid}
+    # except Exception as e:
+    #     LOGGER.error(str(e))
+    #     raise HTTPException(401, detail=str(e))
 
-@router.websocket("/ws")
-async def parser_status(websocket: WebSocket):
-    await websocket.accept()

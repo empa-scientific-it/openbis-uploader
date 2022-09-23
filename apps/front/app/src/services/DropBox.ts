@@ -171,8 +171,8 @@ function transferBody(fileId: string, targetId: string, datasetType: string, tar
 {
 
     const a  =  {
-        ...((targetType == OpenbisObjectTypes.OBJECT) ? {object: targetId} : {}),
-        ...((targetType == OpenbisObjectTypes.COLLECTION) ? {collection: targetId} : {}),
+        identifier: targetId,
+        type: targetType,
         dataset_type: datasetType,
         parser: parser,
         source: fileId,

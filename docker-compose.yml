@@ -19,21 +19,28 @@ networks:
   loki:
 
 services:
-
+  nginx:
+    image: nginx:latest
+    ports:
+    - 8433:443
+    hostname: ngnix
+    volumes:
+      - ./services/nginx/nginx-setup.conf:/etc/nginx/conf.d/default.conf:ro
   worker:
     build:
       context: ./services/
       dockerfile: ./worker/Dockerfile
     depends_on:
       - cache
+      - nginx
     hostname: worker
     volumes:
       - ./services/data-discovery/app/datastore/:/datastore
+      - ./services/worker/supervisord.conf:/supervisord.conf/
     environment:
-      - REDIS_URL=redis
+      - REDIS_HOST=redis
       - REDIS_PORT=6379
       - REDIS_PASSWORD=${REDIS_PASSWORD}
-
   data-discovery:
     build: 
       context: ./services/

@@ -29,23 +29,23 @@
 
 
 <template>
-    <div class="fixedhead" @drop.prevent="handleFileDropped"  @dragover.prevent  @dragenter.prevent>
+    <div class="fixedhead"  @dragover.prevent  @dragenter.prevent>
         <table id="files" class="table table-striped table-bordered">
-        <thead>
-            <tr>
-                <th></th>
-                <th>Name</th>
-                <th>Created</th>
-            </tr>
-        </thead>
-        <tbody>
-            <tr v-for="item in fileList" class="item" draggable=true  @dragover.prevent  @dragenter.prevent  @dragend="handleFileMoved(item)" @dragstart="handleFileMoved(item)" :id="item.name">
-                <td class="bi bi-file-earmark" :id="item.name" @click="selected.value=item"></td>
-                <td>{{ item.name }}</td>
-                <td>{{ item.created }}</td>
-            </tr>
-        </tbody>
-    </table>
+            <thead>
+                <tr>
+                    <th></th>
+                    <th>Name</th>
+                    <th>Created</th>
+                </tr>
+            </thead>
+            <tbody @drop.prevent="handleFileDropped">
+                <tr v-for="item in fileList" class="item" draggable=true  @dragover.prevent  @dragenter.prevent  @dragend="handleFileMoved(item)" @dragstart="handleFileMoved(item)" :id="item.name">
+                    <td class="bi bi-file-earmark" :id="item.name" @click="selected.value=item"></td>
+                    <td>{{ item.name }}</td>
+                    <td>{{ item.created }}</td>
+                </tr>
+            </tbody>
+        </table>
     </div>
 
 </template>

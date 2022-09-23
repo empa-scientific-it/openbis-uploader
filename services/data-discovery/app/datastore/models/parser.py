@@ -2,14 +2,16 @@ from pydantic import BaseModel, fields
 from typing import Dict, Optional, Tuple, List, Any
 from uuid import UUID, uuid4
 import enum
+from instance_creator.views import OpenbisHierarcy
+
 
 class FunctionParameters(BaseModel):
     pass
 
 class ParserParameters(BaseModel):
     source: str
-    object: str | None
-    collection: str | None
+    identifier: str 
+    type: OpenbisHierarcy
     parser: str
     dataset_type: str
     function_parameters: Dict[str, Any]
@@ -22,6 +24,6 @@ class ProcessState(enum.Enum):
     FAILED = -1
 
 class ParserProcess(BaseModel):
-    uid: UUID = fields.Field(default_factory=uuid4)
-    status: ProcessState = ProcessState.STOPPED
+    taskid: str
+    status: ProcessState = ProcessState.IN_PROGRESS
     result: Any = None

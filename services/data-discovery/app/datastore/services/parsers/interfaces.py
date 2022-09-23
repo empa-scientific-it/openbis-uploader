@@ -8,6 +8,8 @@ from pydantic.main import ModelMetaclass
 import inspect
 from typing import NewType
 from datastore.models.parser import FunctionParameters
+import logging
+LOGGER = logging.getLogger(__name__)
 
 
 class OpenbisDatasetParser(ABC):
@@ -40,10 +42,22 @@ class OpenbisDatasetParser(ABC):
         """
         pass
 
+    def run(self, ob: Openbis, dataset: DataSet, *args, **kwargs):
+        trans = ob.new_transaction()
+        LOGGER.info("Started work")
+        try:
+            self.process(ob, trans, dataset, *args, **kwargs)
+            LOGGER.info("Committing transaction")
+            trans.commit()
+            LOGGER.info("Finished work")
+        except Exception as e:
+            raise ValueError('Processing failed')
+        
+
     def _generate_basemodel(self) -> ModelMetaclass:
         """
         Generates a :obj:`pydantic.BaseModel`
-        from the annotation of the `process` function of
+        from the annotations of the `process` function of
         the derived class.
         """
         excluded_names = ['transaction', 'dataset', 'ob']

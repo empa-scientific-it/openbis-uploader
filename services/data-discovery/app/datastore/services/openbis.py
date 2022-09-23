@@ -22,7 +22,7 @@ class OpenbisUser(auth_models.User):
 @cache
 def get_openbis() -> pybis.Openbis:
     config = settings.get_settings()
-    return pybis.Openbis(config.openbis_server, verify_certificates=False, token=False, allow_http_but_do_not_use_this_in_production_and_only_within_safe_networks=True)
+    return pybis.Openbis(config.openbis_server, verify_certificates=False, token=False, allow_http_but_do_not_use_this_in_production_and_only_within_safe_networks=True, use_cache=True)
 
 
 

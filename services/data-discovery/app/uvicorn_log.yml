@@ -16,7 +16,7 @@ handlers:
       class: logging.FileHandler
       level: INFO
       formatter: standard
-      filename: /logs/app.log
+      filename: ./app.log
       encoding: utf8
 
 loggers:
