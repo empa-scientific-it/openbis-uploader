@@ -10,3 +10,4 @@ bcrypt
 redis
 websockets
 rq
+asyncinotify
