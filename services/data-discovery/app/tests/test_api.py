@@ -10,6 +10,10 @@ from datastore.utils import settings, redis as redis_utils, rq as rq_utils
 from datastore.utils import files
 from datastore.services.ldap import ldap
 from datastore.services.parsers.interfaces import OpenbisDatasetParser
+from datastore.services import openbis as openbis_service
+
+from datastore.models import openbis as openbis_models
+
 import os
 from typing import Callable, Dict, Any, Type, Generator
 import pytest
@@ -89,6 +93,14 @@ def temp_files(client, token):
     yield cf
     cf.close()
 
+
+@pytest.fixture
+def temp_openbis(login_data) -> Generator[openbis.Openbis, str, None]:
+    app_settings = settings.get_settings()
+    ob = openbis.Openbis(app_settings.openbis_server, verify_certificates=False, allow_http_but_do_not_use_this_in_production_and_only_within_safe_networks=True)
+    ob.login(**login_data('openbis', 'admin'))
+    yield ob
+    ob.logout()
 
 @pytest.fixture
 def temp_worker():
@@ -207,6 +219,22 @@ def test_openbis_info(client, token):
 def test_openbis_delete(client, token):
     resp = client.delete(f"/openbis/?", headers=token("openbis", "basi"), params={'identifier':'/DEMO/TEST/SAMP1'})
     assert resp.status_code == 200
+
+def test_v3_api(client: TestClient, token):
+    req_method = 'login'
+    username = 'admin'
+    req_body = [username, 'changeit']
+    req_params = openbis_models.JRPCRequest(method= req_method, params = req_body)
+    response = client.post('/openbis/v3_api', headers=token("openbis", 'admin'), json=req_params.dict())
+    pytest.set_trace()
+    assert response.status_code == 200 and (username in response.json()['result'])
+
+def test_openbis_eln_upload(client: TestClient, temp_openbis: openbis.Openbis, token: Callable[[str], str]):
+    with  tf.NamedTemporaryFile('w') as temp_file:
+        temp_file.write("asdsadasdasd")
+        temp_file.flush()
+        openbis_service.upload_file_to_lims(temp_openbis, pl.Path(temp_file.name))
+
 
 def test_transfer(client, token):
     with  tf.NamedTemporaryFile() as temp_file:

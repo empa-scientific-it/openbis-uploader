@@ -1,6 +1,30 @@
-from typing import List, NamedTuple, Dict, Tuple, TypeVar
+from typing import List, NamedTuple, Dict, Tuple, TypeVar, Any
 import pandas as pd
 from pathlib import PurePath
+import requests
+
+
+
+
+def jrpc_request(url: str, method: str, params: List[Any]) -> Dict:
+    """
+    Creates a JRPC request
+    """
+    body = {
+        "id": "1",
+	    "jsonrpc": "2.0",
+	    "method": method,
+        "params": params
+    }
+    requests.post(url, json=body)
+
+def get_token(url: str, username: str, password: str) -> str:
+    """
+    Gets the openbis
+    """
+    jrpc_request(url, 'login', [username, password])
+
+
 def split_identifier(id: str, sep='/') -> List[str] | None:
     return list(filter(None, id.split(sep)))
 

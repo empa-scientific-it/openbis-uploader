@@ -10,6 +10,11 @@ from asyncinotify import Inotify, Mask
 import tempfile as tf
 
 
+"""
+This module contains asynchronous file watchers that run in background and check for the appearance of new files. When these are found, a function is run.
+These tasks are used to start background jobs that the users register in the webapp
+"""
+
 class WatchingTask(BaseModel):
     path: pl.Path
     pattern: str
@@ -22,24 +27,41 @@ class WatchingTask(BaseModel):
         globals()[self.function](*args, **kwargs)
 
 
+
 class WatchersRegistry(BaseModel):
 
     tasks: dict[str, WatchingTask]
 
-    def make_notify(self) -> Inotify:
-        notify = Inotify()
-        for name, task in self.tasks.items():
-            notify.add_watch(task.path,  Mask.CLOSE_WRITE)
-        return notify
-
-    async def work(self):
-        notifier = self.make_notify()
-        async for event in notifier:
-            current_task, *rest = [task for name, task in self.tasks.items() if event.path and task.match_path(event.path)]
-            current_task.work(event.path)
-            print(current_task)
-
+    def add_task(self, task: WatchingTask, name: str) -> None:
+        self.tasks.update({name: task})
     
+    def remove_task(self, name: str) -> None:
+        self.tasks.pop(name)
+
+    # def schedule_tasks(self) -> Inotify:
+    #     notify = Inotify()
+    #     for name, task in self.tasks.items():
+    #         notify.add_watch(task.path,  Mask.CLOSE_WRITE)
+    #     return notify
+
+    # async def work(self):
+    #     notifiers = self.schedule_tasks()
+    #     async for event in notifiers:
+    #         current_task, *rest = [task for name, task in self.tasks.items() if event.path and task.match_path(event.path)]
+    #         current_task.work(event.path)
+
+
+class FileWatcher():
+
+    def __init__(self, tasks: WatchersRegistry, notify: Inotify) -> None:
+        self.registry = tasks
+        self.inotify = notify
+        self.scheduled_tasks: dict[str, asyncio.Task] = {}
+    
+    def schedule_task(self, task: str) -> None:
+        
+
+
     
 
 

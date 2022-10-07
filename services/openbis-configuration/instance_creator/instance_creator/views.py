@@ -10,6 +10,12 @@ import enum
 
 from . import utils
 
+
+import requests
+
+
+
+
 class OpenbisHierarcy(enum.Enum):
     OBJECT = "OBJECT"
     SAMPLE = "OBJECT"
